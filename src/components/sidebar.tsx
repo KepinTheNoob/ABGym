@@ -40,12 +40,12 @@ export default function Sidebar() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="md:hidden p-4 text-white fixed z-50"
-      >
-        ☰
-      </button>
+      <div className="md:hidden fixed top-0 left-0 w-full h-16 bg-[#0F0F0F] flex items-center gap-4 p-4 border-b border-gray-800 z-50">
+    <button onClick={() => setOpen(true)} className="text-white text-2xl">
+      ☰
+    </button>
+    <h1 className="text-white font-semibold text-lg">AB Fitness Center</h1>
+  </div>
 
       {open && (
         <div
@@ -81,14 +81,21 @@ export default function Sidebar() {
                 to={path}
                 key={label}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 p-2 rounded transition 
-                  hover:text-yellow-400
-                  ${isActive ? "text-yellow-400" : "text-gray-300"}
+                className={`
+                  flex items-center gap-3 px-3 py-2 
+                  transition-all cursor-pointer
+                  rounded-2xl
+
+                  ${
+                    isActive
+                      ? "bg-[#F0B100] bg-opacity-10 text-[#F0B100]" // squircle highlight
+                      : "text-gray-300 hover:bg-[#1a1a1c] hover:text-[#F0B100]"
+                  }
                 `}
               >
                 <Icon
                   className={`w-5 h-5 ${
-                    isActive ? "stroke-yellow-400" : "stroke-gray-300"
+                    isActive ? "stroke-[#F0B100]" : "stroke-gray-300"
                   }`}
                 />
                 {label}
