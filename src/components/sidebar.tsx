@@ -5,6 +5,7 @@ import DollarIcon from "../assets/sider/dollar.svg?react";
 import CalendarIcon from "../assets/sider/calender.svg?react";
 import CogIcon from "../assets/sider/cog.svg?react";
 import { useState } from "react";
+import { TagIcon } from "lucide-react";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -26,26 +27,31 @@ export default function Sidebar() {
       icon: DollarIcon,
       path: "/finances",
     },
-    {
-      label: "Classes",
-      icon: CalendarIcon,
-      path: "/classes",
-    },
+    // {
+    //   label: "Classes",
+    //   icon: CalendarIcon,
+    //   path: "/classes",
+    // },
     {
       label: "Settings",
       icon: CogIcon,
       path: "/settings",
+    },
+    {
+      label: "Plans",
+      icon: TagIcon,
+      path: "/plans",
     },
   ];
 
   return (
     <>
       <div className="md:hidden fixed top-0 left-0 w-full h-16 bg-[#0F0F0F] flex items-center gap-4 p-4 border-b border-gray-800 z-50">
-    <button onClick={() => setOpen(true)} className="text-white text-2xl">
-      ☰
-    </button>
-    <h1 className="text-white font-semibold text-lg">AB Fitness Center</h1>
-  </div>
+        <button onClick={() => setOpen(true)} className="text-white text-2xl">
+          ☰
+        </button>
+        <h1 className="text-white font-semibold text-lg">AB Fitness Center</h1>
+      </div>
 
       {open && (
         <div
@@ -88,7 +94,7 @@ export default function Sidebar() {
 
                   ${
                     isActive
-                      ? "bg-[#F0B100] bg-opacity-10 text-[#F0B100]" // squircle highlight
+                      ? "bg-[#F0B100] bg-opacity-10 text-[#F0B100]"
                       : "text-gray-300 hover:bg-[#1a1a1c] hover:text-[#F0B100]"
                   }
                 `}
