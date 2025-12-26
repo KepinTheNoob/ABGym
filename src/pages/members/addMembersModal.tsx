@@ -1,5 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
+import Calendar from "../../components/calendar";
 
 type AddMembersModalProps = {
   open: boolean;
@@ -30,6 +31,35 @@ const AddMembersModal = ({
 
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [expirationDate, setExpirationDate] = useState<Date | null>(null);
+  // Date of birth date
+  const [dobDate, setDobDate] = useState<Date | undefined>();
+  const [isDobCalendarOpen, setIsDobCalendarOpen] = useState(false);
+
+  // Membership Start date
+  const [joinDate, setJoinDate] = useState<Date | undefined>();
+  const [isJoinCalendarOpen, setIsJoinCalendarOpen] = useState(false);
+  
+
+  // date member
+  useEffect(() => {
+  if (!joinDate) return;
+
+  setFormData((prev) => ({
+    ...prev,
+  joinDate: joinDate.toISOString().split("T")[0],
+  }));
+  }, [joinDate]);
+
+  // dob
+  useEffect(() => {
+  if (!dobDate) return;
+
+  setFormData((prev) => ({
+    ...prev,
+    dob: dobDate.toISOString().split("T")[0],
+  }));
+}, [dobDate]);
+
 
   // 2. EFFECT: Calculate Expiration
   useEffect(() => {
@@ -93,12 +123,12 @@ const AddMembersModal = ({
           <div>
             <label className="text-sm text-gray-400">Profile Photo</label>
             <div className="flex items-center gap-4 mt-2">
-              <div className="w-16 h-16 rounded-full border border-gray-700 flex items-center justify-center text-gray-500">
-                ⬆
+              <div className="w-24 h-24 rounded-full border border-gray-700 flex items-center justify-center text-gray-500">
+                ??
               </div>
               <button
                 type="button"
-                className="px-4 py-2 rounded-lg bg-gray-700 text-sm hover:bg-gray-600"
+                className="px-4 py-2 rounded-lg bg-gray-800 text-sm hover:bg-gray-700"
               >
                 Upload Photo
               </button>
@@ -139,14 +169,28 @@ const AddMembersModal = ({
                   required
                 />
               </div>
-              <div>
+              <div className="relative">
                 <label className="text-xs text-gray-400">Date of Birth</label>
-                <input
-                  type="date"
-                  name="dob"
-                  onChange={handleChange}
-                  className="input mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-sm"
-                />
+
+                <button
+                  type="button"
+                  onClick={() => setIsDobCalendarOpen(!isDobCalendarOpen)}
+                  className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-left text-sm"
+                >
+                  {dobDate ? dobDate.toLocaleDateString("en-GB") : "Select Date"}
+                </button>
+
+                {isDobCalendarOpen && (
+                  <div className="absolute z-50 mt-2">
+                    <Calendar
+                      value={dobDate}
+                      onSelect={(date) => {
+                        setDobDate(date);
+                        setIsDobCalendarOpen(false);
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-4">
@@ -192,18 +236,31 @@ const AddMembersModal = ({
               </div>
               <div>
                 <label className="text-xs text-gray-400">Start Date</label>
-                <input
-                  type="date"
-                  name="joinDate"
-                  onChange={handleChange}
-                  className="input mt-1 bg-[#0a0a0a] border border-gray-800 rounded p-2 text-sm w-full"
-                  required
-                />
+
+                <button
+                  type="button"
+                  onClick={() => setIsJoinCalendarOpen(!isJoinCalendarOpen)}
+                  className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-left text-sm"
+                >
+                  {joinDate ? joinDate.toLocaleDateString("en-GB") : "Select Date"}
+                </button>
+
+                {isJoinCalendarOpen && (
+                  <div className="absolute z-50 mt-2">
+                    <Calendar
+                      value={joinDate}
+                      onSelect={(date) => {
+                        setJoinDate(date);
+                        setIsJoinCalendarOpen(false);
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-3 text-sm text-yellow-400">
               Expiration Date:{" "}
-              {expirationDate ? expirationDate.toLocaleDateString() : "—"}
+              {expirationDate ? expirationDate.toLocaleDateString() : "--"}
             </div>
           </div>
 
