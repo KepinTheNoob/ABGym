@@ -52,7 +52,7 @@ export default function Calendar({ value, onSelect }: CalendarProps) {
 
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-800">
+        <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-800"> 
           <ChevronLeft className="w-4 h-4" />
         </button>
 
