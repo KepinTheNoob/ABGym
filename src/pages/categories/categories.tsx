@@ -2,97 +2,73 @@ import { useState } from "react";
 import { Pencil, Trash2, Plus, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API } from "../../service/api";
-import PlansModal from "./addPlansModal";
-import toast, { Toaster } from "react-hot-toast";
+import AddCategoriesModal from "./addCategoriesModal";
 
-type Plan = {
+type Category = {
   id: number;
   name: string;
-  price: number;
-  durationValue: number;
-  durationUnit: string;
+  description: string;
 };
 
-export default function Plans() {
+export default function Categories() {
   const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  const { data: plans = [], isLoading: isFetching } = useQuery<Plan[]>({
-    queryKey: ["plans"],
-    queryFn: async () => {
-      const res = await API.get("/plans");
-      return res.data;
-    },
-  });
+  const { data: categories = [], isLoading: isFetching } = useQuery<Category[]>(
+    {
+      queryKey: ["categories"],
+      queryFn: async () => {
+        const res = await API.get("/categories");
+        return res.data;
+      },
+    }
+  );
 
   const createMutation = useMutation({
-    mutationFn: async (newPlan: Omit<Plan, "id">) => {
-      const res = await API.post("/plans", newPlan);
+    mutationFn: async (newCategory: Omit<Category, "id">) => {
+      const res = await API.post("/categories", newCategory);
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["plans"] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
       closeModal();
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (plan: Plan) => {
-      const res = await API.put(`/plans/${plan.id}`, {
-        name: plan.name,
-        price: plan.price,
-        durationValue: plan.durationValue,
-        durationUnit: plan.durationUnit,
+    mutationFn: async (category: Category) => {
+      const res = await API.put(`/categories/${category.id}`, {
+        name: category.name,
+        description: category.description,
       });
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["plans"] });
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
       closeModal();
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await API.delete(`/plans/${id}`);
+      await API.delete(`/categories/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["plans"] });
-      toast.success("Plan deleted successfully!");
-    },
-    onError: (error: any) => {
-      const status = error?.response?.status;
-      const msg =
-        error?.response?.data?.msg ||
-        error?.response?.data?.message ||
-        "Action failed";
-
-      if (status === 409) {
-        toast.error(
-          "Cannot delete plan: It is currently assigned to active members.",
-          {
-            duration: 5000,
-            icon: "⚠️",
-          }
-        );
-        return;
-      }
-
-      toast.error(`Failed: ${msg}`);
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
   });
 
   const openAddModal = () => {
-    setEditingPlan(null);
+    setEditingCategory(null);
     setOpen(true);
     setTimeout(() => setIsVisible(true), 10);
   };
 
-  const openEditModal = (plan: Plan) => {
-    setEditingPlan(plan);
+  const openEditModal = (category: Category) => {
+    setEditingCategory(category);
     setOpen(true);
     setTimeout(() => setIsVisible(true), 10);
   };
@@ -102,55 +78,48 @@ export default function Plans() {
     setTimeout(() => setOpen(false), 300);
   };
 
-  const handleSubmit = (data: {
-    name: string;
-    price: number;
-    durationValue: number;
-    durationUnit: string;
-  }) => {
-    if (editingPlan) {
-      updateMutation.mutate({ ...data, id: editingPlan.id });
+  const handleSubmit = (data: { name: string; description: string }) => {
+    if (editingCategory) {
+      updateMutation.mutate({ ...data, id: editingCategory.id });
     } else {
       createMutation.mutate(data);
     }
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this plan?")) {
+    if (confirm("Are you sure you want to delete this category?")) {
       deleteMutation.mutate(id);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white p-4 md:p-8">
-      <Toaster position="top-center" />
+      {/* Header */}
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-xl md:text-2xl font-bold">Plans Management</h2>
+        <h2 className="text-xl md:text-2xl font-bold">Categories Management</h2>
         <button
           onClick={openAddModal}
           className="flex items-center gap-2 bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold py-2 px-4 rounded-xl"
         >
           <Plus className="w-4 h-4" />
-          Add Plan
+          Add Category
         </button>
       </div>
       <p className="text-gray-400 mb-6 text-sm md:text-base">
-        Manage membership plans and pricing
+        Manage categories for transactions
       </p>
 
+      {/* Table Card */}
       <div className="bg-[#161618] border border-gray-800 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b border-gray-800">
                 <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                  Plan Name
+                  Name
                 </th>
                 <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                  Price
-                </th>
-                <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                  Duration
+                  Description
                 </th>
                 <th className="text-center px-5 py-4 text-gray-400 text-xs uppercase">
                   Actions
@@ -162,55 +131,51 @@ export default function Plans() {
               {isFetching ? (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={3}
                     className="px-5 py-10 text-center text-gray-400"
                   >
                     <div className="flex justify-center items-center gap-2">
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Loading plans...
+                      Loading categories...
                     </div>
                   </td>
                 </tr>
-              ) : plans.length === 0 ? (
+              ) : categories.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={3}
                     className="px-5 py-10 text-center text-gray-400"
                   >
-                    No plans created yet
+                    No categories created yet
                   </td>
                 </tr>
               ) : (
-                plans.map((plan) => (
+                categories.map((category) => (
                   <tr
-                    key={plan.id}
+                    key={category.id}
                     className="border-b border-gray-800/50 hover:bg-gray-900/30 transition"
                   >
                     <td className="px-5 py-4 text-sm font-medium">
-                      {plan.name}
+                      {category.name}
                     </td>
-                    <td className="px-5 py-4 text-sm">
-                      Rp {plan.price.toLocaleString("id-ID")}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-gray-300 capitalize">
-                      {plan.durationValue} {plan.durationUnit.toLowerCase()}
-                      {plan.durationValue > 1 ? "s" : ""}
+                    <td className="px-5 py-4 text-sm text-gray-300">
+                      {category.description}
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex justify-center gap-2">
                         <button
-                          onClick={() => openEditModal(plan)}
+                          onClick={() => openEditModal(category)}
                           className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(plan.id)}
+                          onClick={() => handleDelete(category.id)}
                           disabled={deleteMutation.isPending}
                           className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition disabled:opacity-50"
                         >
                           {deleteMutation.isPending &&
-                          deleteMutation.variables === plan.id ? (
+                          deleteMutation.variables === category.id ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <Trash2 className="w-4 h-4" />
@@ -226,10 +191,10 @@ export default function Plans() {
         </div>
       </div>
 
-      <PlansModal
+      <AddCategoriesModal
         open={open}
         isVisible={isVisible}
-        initialData={editingPlan}
+        initialData={editingCategory}
         onClose={closeModal}
         onSubmit={handleSubmit}
         isLoading={createMutation.isPending || updateMutation.isPending}

@@ -2,10 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import DashboardIcon from "../assets/sider/dashboard.svg?react";
 import MembersIcon from "../assets/sider/members.svg?react";
 import DollarIcon from "../assets/sider/dollar.svg?react";
-import CalendarIcon from "../assets/sider/calender.svg?react";
-import CogIcon from "../assets/sider/cog.svg?react";
 import { useState } from "react";
-import { TagIcon } from "lucide-react";
+import { Box, TagIcon } from "lucide-react";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -33,9 +31,9 @@ export default function Sidebar() {
     //   path: "/classes",
     // },
     {
-      label: "Settings",
-      icon: CogIcon,
-      path: "/settings",
+      label: "Categories",
+      icon: Box,
+      path: "/categories",
     },
     {
       label: "Plans",
