@@ -5,105 +5,172 @@ import {
   TrendingDown,
   DollarSign,
   Search,
-  ChevronDown,
-  Calendar,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { API } from "../../service/api";
+import toast, { Toaster } from "react-hot-toast";
+import AddExpenseModal from "./addExpenseModal";
 
+// --- Types ---
 type TransactionType = "Income" | "Expense";
+type PaymentMethod = "Cash" | "CreditCard" | "Transfer";
+
+interface Category {
+  id: number;
+  name: string;
+  description: string;
+}
 
 interface Transaction {
   id: string;
+  memberId?: string | null;
+  categoryId?: number | null;
   description: string;
-  code: string;
-  category: string;
-  date: string;
   type: TransactionType;
-  amount: number;
+  amount: string; 
+  paymentMethod: PaymentMethod;
+  transactionDate: string;
+  category?: Category;
 }
 
-const transactions: Transaction[] = [
-  {
-    id: "1",
-    description: "Membership Renewal",
-    code: "TXN-1043",
-    category: "Membership",
-    date: "Jun 28, 2024",
-    type: "Income",
-    amount: 600.0,
-  },
-  {
-    id: "2",
-    description: "Equipment Maintenance",
-    code: "EXP-1022",
-    category: "Maintenance",
-    date: "Jun 27, 2024",
-    type: "Expense",
-    amount: 250.0,
-  },
-  {
-    id: "3",
-    description: "Personal Training Session",
-    code: "TXN-1021",
-    category: "Training",
-    date: "Jun 26, 2024",
-    type: "Income",
-    amount: 150.0,
-  },
-  {
-    id: "4",
-    description: "Utilities Bill",
-    code: "EXP-1020",
-    category: "Utilities",
-    date: "Jun 25, 2024",
-    type: "Expense",
-    amount: 450.0,
-  },
-  {
-    id: "5",
-    description: "Membership Renewal",
-    code: "TXN-1018",
-    category: "Membership",
-    date: "Jun 25, 2024",
-    type: "Income",
-    amount: 450.0,
-  },
-  {
-    id: "6",
-    description: "Beverage Sales",
-    code: "TXN-1017",
-    category: "Retail",
-    date: "Jun 24, 2024",
-    type: "Income",
-    amount: 85.0,
-  },
-  {
-    id: "7",
-    description: "Marketing Campaign",
-    code: "EXP-1016",
-    category: "Marketing",
-    date: "Jun 23, 2024",
-    type: "Expense",
-    amount: 320.0,
-  },
-  {
-    id: "8",
-    description: "Class Registration Fee",
-    code: "TXN-1015",
-    category: "Classes",
-    date: "Jun 22, 2024",
-    type: "Income",
-    amount: 120.0,
-  },
+const COLORS = [
+  { hex: "#eab308", tw: "bg-yellow-500" }, // Yellow
+  { hex: "#22c55e", tw: "bg-green-500" },  // Green
+  { hex: "#a855f7", tw: "bg-purple-500" }, // Purple
+  { hex: "#3b82f6", tw: "bg-blue-500" },   // Blue
+  { hex: "#ef4444", tw: "bg-red-500" },    // Red (fallback)
 ];
 
 export default function Finances() {
+  const queryClient = useQueryClient();
+  
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isAddVisible, setIsAddVisible] = useState(false);
+
+  const openAddModal = () => {
+    setIsAddOpen(true);
+    setTimeout(() => setIsAddVisible(true), 10);
+  };
+
+  const closeAddModal = () => {
+    setIsAddVisible(false);
+    setTimeout(() => setIsAddOpen(false), 300);
+  };
+
+  const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
+    queryKey: ["transactions"],
+    queryFn: async () => {
+      const res = await API.get("/transactions");
+      return res.data;
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (newTransaction: any) => {
+      const res = await API.post("/transactions", newTransaction);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      closeAddModal();
+      toast.success("Transaction saved successfully");
+    },
+    onError: (error: any) => {
+      const msg = error.response?.data?.message || "Failed to save transaction";
+      toast.error(msg);
+    },
+  });
+
+  const handleAddSubmit = (data: any) => {
+    createMutation.mutate(data);
+  };
+
+  const stats = useMemo(() => {
+    let revenue = 0;
+    let expenses = 0;
+
+    transactions.forEach((t) => {
+      const amount = Number(t.amount);
+      if (t.type === "Income") revenue += amount;
+      else expenses += amount;
+    });
+
+    return {
+      revenue,
+      expenses,
+      netProfit: revenue - expenses,
+    };
+  }, [transactions]);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((t) =>
+      t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [transactions, searchTerm]);
+
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const categoryData = useMemo(() => {
+    const data: Record<string, number> = {};
+    let total = 0;
+
+    transactions
+      .filter((t) => t.type === "Income")
+      .forEach((t) => {
+        const catName = t.category?.name || "Uncategorized";
+        const amt = Number(t.amount);
+        data[catName] = (data[catName] || 0) + amt;
+        total += amt;
+      });
+
+    return Object.entries(data).map(([label, value], index) => ({
+      label,
+      value,
+      percentage: total > 0 ? (value / total) * 100 : 0,
+      displayPercentage: total > 0 ? Math.round((value / total) * 100) : 0,
+      color: COLORS[index % COLORS.length],
+    }));
+  }, [transactions]);
+
+  const conicGradient = useMemo(() => {
+    if (categoryData.length === 0) return "conic-gradient(#333 0% 100%)";
+
+    let currentPercentage = 0;
+    const gradientParts = categoryData.map((item) => {
+      const start = currentPercentage;
+      const end = currentPercentage + item.percentage;
+      currentPercentage = end;
+      return `${item.color.hex} ${start}% ${end}%`;
+    });
+
+    return `conic-gradient(${gradientParts.join(", ")})`;
+  }, [categoryData]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0c0c0e] flex items-center justify-center text-white">
+        <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
+      <Toaster position="top-right" />
+      
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         {/* --- Header --- */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -116,12 +183,15 @@ export default function Finances() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <button className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-[#1E2939] hover:bg-[#2B3A55] text-gray-300 font-bold rounded-xl">
+            <button className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-[#1E2939] hover:bg-[#2B3A55] text-gray-300 font-bold rounded-xl transition-colors">
               <Download className="w-4 h-4 mr-2" strokeWidth={3} />
               Export Report
             </button>
 
-            <button className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold rounded-xl">
+            <button 
+              onClick={openAddModal}
+              className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold rounded-xl transition-colors"
+            >
               <Plus className="w-4 h-4 mr-2" strokeWidth={3} />
               Add Expense
             </button>
@@ -133,16 +203,14 @@ export default function Finances() {
           {/* Card 1: Revenue */}
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-sm font-medium text-gray-400">
-                TOTAL REVENUE
-              </h3>
+              <h3 className="text-sm font-medium text-gray-400">TOTAL REVENUE</h3>
               <div className="bg-green-500/20 p-1.5 rounded-md">
                 <TrendingUp className="w-5 h-5 text-green-500" />
               </div>
             </div>
             <div className="flex items-baseline mb-2">
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
-                $12,450
+                ${stats.revenue.toLocaleString()}
               </span>
               <span className="text-green-500 font-medium text-sm">+2%</span>
             </div>
@@ -152,16 +220,14 @@ export default function Finances() {
           {/* Card 2: Expenses */}
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-sm font-medium text-gray-400">
-                TOTAL EXPENSES
-              </h3>
+              <h3 className="text-sm font-medium text-gray-400">TOTAL EXPENSES</h3>
               <div className="bg-red-500/20 p-1.5 rounded-md">
                 <TrendingDown className="w-5 h-5 text-red-500" />
               </div>
             </div>
             <div className="flex items-baseline mb-2">
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
-                $3,120
+                ${stats.expenses.toLocaleString()}
               </span>
               <span className="text-red-500 font-medium text-sm">-18%</span>
             </div>
@@ -178,9 +244,11 @@ export default function Finances() {
             </div>
             <div className="flex items-baseline mb-2">
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
-                $9,330
+                ${stats.netProfit.toLocaleString()}
               </span>
-              <span className="text-green-500 font-medium text-sm">+1%</span>
+              <span className={`font-medium text-sm ${stats.netProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {stats.netProfit >= 0 ? '+1%' : '-1%'}
+              </span>
             </div>
             <p className="text-sm text-gray-400">vs. last month</p>
           </div>
@@ -188,7 +256,6 @@ export default function Finances() {
 
         {/* --- Charts Section --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Revenue vs Expenses (Line Chart Visual) */}
           <div className="lg:col-span-2 bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex justify-between items-center mb-6">
               <div>
@@ -196,159 +263,76 @@ export default function Finances() {
                 <p className="text-sm text-gray-400">Jan - Jun 2024</p>
               </div>
             </div>
-
-            {/* Chart Container */}
             <div className="h-56 sm:h-64 md:h-72 relative w-full">
-              <div className="absolute inset-0 flex items-end justify-between px-4 pb-6">
-                {/* Y-axis Labels */}
-                <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-[10px] sm:text-xs text-gray-500 py-2">
-                  <span>$14k</span>
-                  <span>$10.5k</span>
-                  <span>$7k</span>
-                  <span>$3.5k</span>
-                  <span>$0k</span>
-                </div>
-
-                {/* Chart SVG Lines */}
-                <div className="w-full h-full border-l border-b border-gray-700 relative ml-8">
-                  {/* Grid lines (optional visual aid) */}
-                  <div className="absolute top-0 w-full border-t border-gray-800/50 h-1/4"></div>
-                  <div className="absolute top-1/4 w-full border-t border-gray-800/50 h-1/4"></div>
-                  <div className="absolute top-2/4 w-full border-t border-gray-800/50 h-1/4"></div>
-
-                  {/* Revenue Line (Yellow) */}
-                  <svg
-                    className="absolute inset-0 h-full w-full overflow-visible"
-                    preserveAspectRatio="none"
-                    viewBox="0 0 100 100"
-                  >
-                    <polyline
-                      fill="none"
-                      stroke="#eab308"
-                      strokeWidth="2"
-                      points="0,60 20,58 40,62 60,55 80,57 100,52"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  </svg>
-                  {/* Expense Line (Red) */}
-                  <svg
-                    className="absolute inset-0 h-full w-full overflow-visible"
-                    preserveAspectRatio="none"
-                    viewBox="0 0 100 100"
-                  >
-                    <polyline
-                      fill="none"
-                      stroke="#ef4444"
-                      strokeWidth="2"
-                      points="0,85 20,86 40,88 60,87 80,89 100,90"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  </svg>
-                </div>
-
-                {/* X-axis Labels */}
-                <div className="absolute bottom-0 left-8 right-0 flex justify-between text-xs text-gray-500 pt-2">
-                  <span>Jan</span>
-                  <span>Feb</span>
-                  <span>Mar</span>
-                  <span>Apr</span>
-                  <span>May</span>
-                  <span>Jun</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-center mt-4 space-x-6">
-              <div className="flex items-center">
-                <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                <span className="text-sm text-gray-400">Expenses</span>
-              </div>
-              <div className="flex items-center">
-                <span className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
-                <span className="text-sm text-gray-400">Revenue</span>
+              <div className="absolute inset-0 flex items-center justify-center text-gray-600 border border-gray-800/50 rounded bg-[#0a0a0a]/50">
+                Chart Visualization Placeholder
               </div>
             </div>
           </div>
 
-          {/* Revenue by Type (Donut Visual) */}
+          {/* DYNAMIC DONUT CHART */}
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="mb-6">
               <h3 className="text-lg font-bold mb-1">Revenue by Type</h3>
-              <p className="text-sm text-gray-400">
-                Current Month Distribution
-              </p>
+              <p className="text-sm text-gray-400">Current Month Distribution</p>
             </div>
-
-            {/* Donut Chart Visual */}
             <div className="flex justify-center items-center h-64 relative">
               <div className="w-48 h-48 rounded-full border-8 border-gray-700 relative flex items-center justify-center">
-                {/* CSS Conic Gradient for Segment simulation */}
+                {/* Dynamic Gradient applied here */}
                 <div
                   className="absolute inset-0 rounded-full"
                   style={{
-                    background:
-                      "conic-gradient(#eab308 0% 55%, #22c55e 55% 80%, #a855f7 80% 92%, #3b82f6 92% 100%)",
+                    background: conicGradient,
                     mask: "radial-gradient(transparent 55%, black 55%)",
                     WebkitMask: "radial-gradient(transparent 55%, black 55%)",
                   }}
                 ></div>
                 <div className="text-center z-10">
                   <p className="text-sm text-gray-400">Total</p>
-                  <p className="text-2xl font-bold">$12.4k</p>
+                  <p className="text-2xl font-bold">
+                    ${stats.revenue.toLocaleString()}
+                  </p>
                 </div>
               </div>
             </div>
-
-            {/* Legend */}
+            
+            {/* Dynamic Legend */}
             <div className="mt-6 space-y-3">
-              {[
-                {
-                  label: "Membership (55%)",
-                  color: "bg-yellow-500",
-                  value: "$6,847",
-                },
-                {
-                  label: "Personal Training (25%)",
-                  color: "bg-green-500",
-                  value: "$3,112",
-                },
-                {
-                  label: "Retail & Beverages (12%)",
-                  color: "bg-purple-500",
-                  value: "$1,494",
-                },
-                {
-                  label: "Class Fees (8%)",
-                  color: "bg-blue-500",
-                  value: "$996",
-                },
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center text-sm"
-                >
-                  <div className="flex items-center">
-                    <span
-                      className={`w-3 h-3 rounded-full ${item.color} mr-2`}
-                    ></span>
-                    <span className="text-gray-400">{item.label}</span>
+              {categoryData.length > 0 ? (
+                categoryData.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center text-sm"
+                  >
+                    <div className="flex items-center">
+                      <span
+                        className={`w-3 h-3 rounded-full ${item.color.tw} mr-2`}
+                      ></span>
+                      <span className="text-gray-400">
+                        {item.label} ({item.displayPercentage}%)
+                      </span>
+                    </div>
+                    <span className="font-medium">
+                      ${item.value.toLocaleString()}
+                    </span>
                   </div>
-                  <span className="font-medium">{item.value}</span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center">
+                  No revenue data available
+                </p>
+              )}
             </div>
           </div>
         </div>
 
         {/* --- Recent Transactions Table --- */}
-        <div className="hidden md:block overflow-x-auto -mx-6">
+        <div className="hidden md:block overflow-x-auto">
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <div>
                 <h3 className="text-lg font-bold mb-1">Recent Transactions</h3>
-                <p className="text-sm text-gray-400">
-                  Latest financial activities
-                </p>
+                <p className="text-sm text-gray-400">Latest financial activities</p>
               </div>
             </div>
 
@@ -360,21 +344,11 @@ export default function Finances() {
                 </span>
                 <input
                   type="text"
-                  placeholder="Search by name or ID..."
+                  placeholder="Search by description or ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full bg-[#10141a] border border-gray-800 rounded-lg py-2 pl-10 pr-4 text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:border-transparent text-sm"
                 />
-              </div>
-              <div className="flex gap-4 w-full md:w-auto">
-                <button className="flex items-center justify-between w-full md:w-32 bg-[#10141a] border border-gray-800 rounded-lg px-4 py-2 text-gray-300 hover:bg-gray-900 transition-colors text-sm">
-                  <span>All Types</span>
-                  <ChevronDown className="w-4 h-4 text-gray-500 ml-2" />
-                </button>
-                <button className="flex items-center justify-between w-full md:w-36 bg-[#10141a] border border-gray-800 rounded-lg px-4 py-2 text-gray-300 hover:bg-gray-900 transition-colors text-sm">
-                  <Calendar className="w-4 h-4 text-gray-500 mr-2" />
-                  <span>Jun 2024</span>
-                </button>
               </div>
             </div>
 
@@ -383,132 +357,83 @@ export default function Finances() {
               <table className="w-full text-left whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-gray-800">
-                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                      Description
-                    </th>
-                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                      Category
-                    </th>
-                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                      Date
-                    </th>
-                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                      Type
-                    </th>
-                    <th className="text-center px-5 py-4 text-gray-400 text-xs uppercase">
-                      Amount
-                    </th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Description</th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Category</th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Date</th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Type</th>
+                    <th className="text-center px-5 py-4 text-gray-400 text-xs uppercase">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {transactions.map((txn) => (
-                    <tr
-                      key={txn.id}
-                      className="hover:bg-white/5 transition-colors"
-                    >
+                  {paginatedTransactions.length === 0 ? (
+                    <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No transactions found.</td></tr>
+                  ) : (
+                    paginatedTransactions.map((txn) => (
+                    <tr key={txn.id} className="hover:bg-white/5 transition-colors">
                       <td className="px-6 py-4">
-                        <p className="text-white text-sm">
-                          {txn.description}
-                        </p>
-                        <p className="text-xs text-gray-500">{txn.code}</p>
+                        <p className="text-white text-sm">{txn.description}</p>
+                        <p className="text-xs text-gray-500">#{txn.id.substring(0, 8)}</p>
                       </td>
-                      <td className="px-6 py-4 text-gray-400 text-sm">
-                        {txn.category}
-                      </td>
-                      <td className="px-6 py-4 text-gray-400 text-sm">
-                        {txn.date}
-                      </td>
+                      <td className="px-6 py-4 text-gray-400 text-sm">{txn.category?.name || "General"}</td>
+                      <td className="px-6 py-4 text-gray-400 text-sm">{new Date(txn.transactionDate).toLocaleDateString()}</td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`flex items-center text-sm ${
-                            txn.type === "Income"
-                              ? "text-green-500"
-                              : "text-red-500"
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full mr-2 ${
-                              txn.type === "Income"
-                                ? "bg-green-500"
-                                : "bg-red-500"
-                            }`}
-                          ></span>
+                        <span className={`flex items-center text-sm ${txn.type === "Income" ? "text-green-500" : "text-red-500"}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full mr-2 ${txn.type === "Income" ? "bg-green-500" : "bg-red-500"}`}></span>
                           {txn.type}
                         </span>
                       </td>
-                      <td
-                        className={`px-6 py-4 text-right font-medium text-sm ${
-                          txn.type === "Income"
-                            ? "text-green-500"
-                            : "text-red-500"
-                        }`}
-                      >
-                        {txn.type === "Income" ? "+" : "-"}$
-                        {txn.amount.toFixed(2)}
+                      <td className={`px-6 py-4 text-right font-medium text-sm ${txn.type === "Income" ? "text-green-500" : "text-red-500"}`}>
+                        {txn.type === "Income" ? "+" : "-"}${Number(txn.amount).toFixed(2)}
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>
 
-            {/* Pagination */}
+            {/* Pagination Controls */}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 text-sm text-gray-400">
-              <p className="mb-4 md:mb-0">Showing 8 of 47 transactions</p>
+              <p className="mb-4 md:mb-0">Showing {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length} transactions</p>
               <div className="flex items-center space-x-2">
-                <button className="p-2 rounded-lg hover:bg-gray-800 transition-colors">
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button className="px-3 py-1 rounded-lg bg-yellow-500 text-gray-900 font-medium">
-                  1
-                </button>
-                <button className="px-3 py-1 rounded-lg hover:bg-gray-800 transition-colors">
-                  2
-                </button>
-                <button className="px-3 py-1 rounded-lg hover:bg-gray-800 transition-colors">
-                  3
-                </button>
-                <span className="px-1">...</span>
-                <button className="px-3 py-1 rounded-lg hover:bg-gray-800 transition-colors">
-                  6
-                </button>
-                <button className="p-2 rounded-lg hover:bg-gray-800 transition-colors">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"><ChevronLeft className="w-4 h-4" /></button>
+                {Array.from({ length: totalPages }).map((_, i) => (
+                    <button key={i} onClick={() => setCurrentPage(i + 1)} className={`px-3 py-1 rounded-lg font-medium ${currentPage === i + 1 ? 'bg-yellow-500 text-gray-900' : 'hover:bg-gray-800 transition-colors'}`}>{i + 1}</button>
+                ))}
+                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"><ChevronRight className="w-4 h-4" /></button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* --- Mobile Transactions List --- */}
+        {/* --- Mobile List --- */}
         <div className="md:hidden space-y-4">
-          {transactions.map((txn) => (
-            <div
-              key={txn.id}
-              className="bg-[#1A1A1A] border border-gray-800 rounded-lg p-4"
-            >
+          {paginatedTransactions.map((txn) => (
+            <div key={txn.id} className="bg-[#1A1A1A] border border-gray-800 rounded-lg p-4">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <p className="font-medium text-gray-200">{txn.description}</p>
-                  <p className="text-xs text-gray-500">{txn.code}</p>
+                  <p className="text-xs text-gray-500">#{txn.id.substring(0, 8)}</p>
                 </div>
-                <span
-                  className={`text-sm font-semibold ${
-                    txn.type === "Income" ? "text-green-500" : "text-red-500"
-                  }`}
-                >
-                  {txn.type === "Income" ? "+" : "-"}${txn.amount.toFixed(2)}
+                <span className={`text-sm font-semibold ${txn.type === "Income" ? "text-green-500" : "text-red-500"}`}>
+                  {txn.type === "Income" ? "+" : "-"}${Number(txn.amount).toFixed(2)}
                 </span>
               </div>
-
               <div className="flex justify-between text-xs text-gray-400">
-                <span>{txn.category}</span>
-                <span>{txn.date}</span>
+                <span>{txn.category?.name || "General"}</span>
+                <span>{new Date(txn.transactionDate).toLocaleDateString()}</span>
               </div>
             </div>
           ))}
         </div>
       </main>
+
+      <AddExpenseModal
+        open={isAddOpen}
+        isVisible={isAddVisible}
+        onClose={closeAddModal}
+        onSubmit={handleAddSubmit}
+        isLoading={createMutation.isPending}
+      />
     </div>
   );
 }

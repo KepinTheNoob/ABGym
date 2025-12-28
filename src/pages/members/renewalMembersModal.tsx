@@ -1,11 +1,11 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react"; // Added X icon
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query"; // Import useQuery
-import { API } from "../../service/api"; // Ensure this path is correct
+import { useQuery } from "@tanstack/react-query";
+import { API } from "../../service/api";
 import CalendarPortal from "../../components/calendarPortal";
 import Calendar from "../../components/calendar";
+import { Member } from "../../types/types";
 
-// Define Plan Type
 type Plan = {
   id: number;
   name: string;
@@ -20,6 +20,7 @@ type RenewalMembersModalProps = {
   onClose: () => void;
   onSubmit: (data: any) => void;
   isLoading?: boolean;
+  member: Member | null;
 };
 
 export default function RenewalMembersModal({
@@ -28,22 +29,21 @@ export default function RenewalMembersModal({
   onClose,
   onSubmit,
   isLoading = false,
+  member,
 }: RenewalMembersModalProps) {
-  // --- 1. FETCH PLANS ---
   const { data: plans = [] } = useQuery<Plan[]>({
     queryKey: ["plans"],
     queryFn: async () => {
       const res = await API.get("/plans");
       return res.data;
     },
-    enabled: open, // Only fetch when open
+    enabled: open,
   });
 
-  // Local state for the form
   const [formData, setFormData] = useState({
-    planId: "", // Changed from planType to planId to match logic
-    joinDate: "", // Using 'joinDate' (start date) for consistency
-    paymentMethod: "",
+    planId: "",
+    joinDate: new Date().toISOString().split("T")[0],
+    paymentMethod: "Cash",
     amountPaid: "",
   });
 
@@ -51,56 +51,66 @@ export default function RenewalMembersModal({
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
-  // Calendar State
-  const [joinDate, setJoinDate] = useState<Date | undefined>();
+  const [joinDate, setJoinDate] = useState<Date | undefined>(new Date());
   const [isJoinCalendarOpen, setIsJoinCalendarOpen] = useState(false);
   const joinRef = useRef<HTMLButtonElement>(null);
 
-  // Sync Calendar selection to form data
+  useEffect(() => {
+    if (open) {
+      setFormData(prev => ({
+        ...prev,
+        joinDate: new Date().toISOString().split("T")[0],
+        amountPaid: "",
+        planId: "",
+      }));
+      setJoinDate(new Date());
+      setExpirationDate(null);
+    }
+  }, [open]);
+
   useEffect(() => {
     if (!joinDate) return;
+    const offset = joinDate.getTimezoneOffset();
+    const localDate = new Date(joinDate.getTime() - offset * 60 * 1000);
     setFormData((prev) => ({
       ...prev,
-      joinDate: joinDate.toISOString().split("T")[0],
+      joinDate: localDate.toISOString().split("T")[0],
     }));
   }, [joinDate]);
 
-  // --- 2. CALCULATE EXPIRATION ---
   useEffect(() => {
     if (!formData.planId || !formData.joinDate) {
       setExpirationDate(null);
       return;
     }
 
-    // Find selected plan
     const selectedPlan = plans.find((p) => p.id === Number(formData.planId));
     if (!selectedPlan) return;
 
-    // Parse date correctly
-    const [year, month, day] = formData.joinDate.split("-").map(Number);
-    const start = new Date(year, month - 1, day);
+    if (!formData.amountPaid) {
+        setFormData(prev => ({...prev, amountPaid: String(selectedPlan.price)}))
+    }
 
+    const [y, m, d] = formData.joinDate.split("-").map(Number);
+    const start = new Date(y, m - 1, d);
     const expiry = new Date(start);
 
     switch (selectedPlan.durationUnit) {
       case "Day":
-        expiry.setDate(expiry.getDate() + selectedPlan.durationValue);
+        expiry.setDate(start.getDate() + selectedPlan.durationValue);
         break;
       case "Week":
-        expiry.setDate(expiry.getDate() + selectedPlan.durationValue * 7);
+        expiry.setDate(start.getDate() + selectedPlan.durationValue * 7);
         break;
       case "Month":
-        expiry.setMonth(expiry.getMonth() + selectedPlan.durationValue);
+        expiry.setMonth(start.getMonth() + selectedPlan.durationValue);
         break;
       case "Year":
-        expiry.setFullYear(expiry.getFullYear() + selectedPlan.durationValue);
+        expiry.setFullYear(start.getFullYear() + selectedPlan.durationValue);
         break;
     }
-
-    expiry.setDate(expiry.getDate() + 1);
-
+    
     expiry.setHours(23, 59, 59, 999);
-
     setExpirationDate(expiry);
   }, [formData.planId, formData.joinDate, plans]);
 
@@ -139,15 +149,16 @@ export default function RenewalMembersModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-bold">Renewal Membership</h3>
+          <h3 className="text-lg font-bold text-white">Renewal Membership</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Dynamic Member Info */}
         <p className="text-sm text-gray-400 mb-6">
-          Renewing for <span className="text-white">Alex Morgan</span>{" "}
-          (GYM-4521)
+          Renewing for <span className="text-white font-medium">{member?.name || "Unknown"}</span>{" "}
+          {member?.id && <span className="text-xs">({member.id.substring(0, 8)})</span>}
         </p>
 
         {/* Form */}
@@ -155,10 +166,10 @@ export default function RenewalMembersModal({
           {/* Membership */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-gray-400">
+              <label className="text-xs text-gray-400 mb-1 block">
                 New Membership Type
               </label>
-              <div className="relative mt-1">
+              <div className="relative">
                 <select
                   onClick={() => setIsMembershipOpen(!isMembershipOpen)}
                   onBlur={() => setIsMembershipOpen(false)}
@@ -166,22 +177,21 @@ export default function RenewalMembersModal({
                     setIsMembershipOpen(false);
                     handleChange(e);
                   }}
-                  name="planId" // Changed to planId
+                  name="planId"
                   className="
                     appearance-none w-full bg-[#0a0a0a] text-white text-sm
                     px-4 pr-10 py-2.5 rounded-lg border border-gray-800
-                    cursor-pointer
+                    cursor-pointer focus:outline-none focus:border-yellow-500
                   "
+                  required
                 >
                   <option value="">Select membership</option>
-                  {/* Dynamic Options */}
                   {plans.map((plan) => (
                     <option key={plan.id} value={plan.id}>
                       {plan.name}
                     </option>
                   ))}
                 </select>
-
                 <ChevronDown
                   className={`
                     pointer-events-none absolute right-3 top-1/2 -translate-y-1/2
@@ -194,12 +204,12 @@ export default function RenewalMembersModal({
             </div>
 
             <div className="relative">
-              <label className="text-xs text-gray-400">New Start Date</label>
+              <label className="text-xs text-gray-400 mb-1 block">New Start Date</label>
               <button
                 ref={joinRef}
                 type="button"
                 onClick={() => setIsJoinCalendarOpen(!isJoinCalendarOpen)}
-                className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-left text-sm"
+                className="w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2.5 text-left text-sm text-white focus:outline-none focus:border-yellow-500"
               >
                 {joinDate
                   ? joinDate.toLocaleDateString("en-GB")
@@ -224,24 +234,24 @@ export default function RenewalMembersModal({
 
           {/* Expiry */}
           <div>
-            <label className="text-xs text-gray-400">
+            <label className="text-xs text-gray-400 mb-1 block">
               Calculated Expiration Date
             </label>
-            <div className="mt-1 rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-sm text-yellow-400">
+            <div className="rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2.5 text-sm text-yellow-400">
               {expirationDate
-                ? expirationDate.toLocaleDateString("en-GB") // dd/mm/yyyy
+                ? expirationDate.toLocaleDateString("en-GB")
                 : "—"}
             </div>
           </div>
 
           {/* Payment */}
           <div className="pt-3 border-t border-gray-800">
-            <h4 className="text-sm font-semibold mb-3">Payment Details</h4>
+            <h4 className="text-sm font-semibold mb-3 text-white">Payment Details</h4>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-400">Payment Method</label>
-                <div className="relative group mt-1">
+                <label className="text-xs text-gray-400 mb-1 block">Payment Method</label>
+                <div className="relative group">
                   <select
                     name="paymentMethod"
                     onClick={() => setIsPaymentOpen(!isPaymentOpen)}
@@ -253,13 +263,13 @@ export default function RenewalMembersModal({
                     className="
                       appearance-none w-full bg-[#0a0a0a] text-white text-sm
                       px-4 pr-10 py-2.5 rounded-lg border border-gray-800
-                      cursor-pointer
+                      cursor-pointer focus:outline-none focus:border-yellow-500
                     "
                   >
-                    <option>Cash</option>
-                    <option>Transfer</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Transfer">Transfer</option>
+                    <option value="CreditCard">Credit Card</option>
                   </select>
-
                   <ChevronDown
                     className={`
                       pointer-events-none absolute right-3 top-1/2 -translate-y-1/2
@@ -272,13 +282,16 @@ export default function RenewalMembersModal({
               </div>
 
               <div>
-                <label className="text-xs text-gray-400">Amount Paid</label>
-                <input
-                  name="amountPaid"
-                  value={formData.amountPaid}
-                  onChange={handleChange}
-                  className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-sm"
-                />
+                <label className="text-xs text-gray-400 mb-1 block">Amount Paid</label>
+                <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                    <input
+                    name="amountPaid"
+                    value={formData.amountPaid}
+                    onChange={handleChange}
+                    className="w-full rounded-lg bg-[#0a0a0a] border border-gray-800 pl-6 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-500"
+                    />
+                </div>
               </div>
             </div>
           </div>
@@ -288,7 +301,8 @@ export default function RenewalMembersModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-gray-700 text-sm"
+              className="px-4 py-2 rounded-lg bg-gray-800 text-gray-300 text-sm hover:bg-gray-700 transition-colors"
+              disabled={isLoading}
             >
               Cancel
             </button>
@@ -296,7 +310,7 @@ export default function RenewalMembersModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 rounded-lg bg-[#F0B100] text-black text-sm font-bold disabled:opacity-60"
+              className="px-4 py-2 rounded-lg bg-[#F0B100] hover:bg-[#d9a000] text-black text-sm font-bold disabled:opacity-50 transition-colors"
             >
               {isLoading ? "Saving..." : "✓ Confirm Renewal"}
             </button>

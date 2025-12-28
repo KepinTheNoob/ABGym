@@ -13,29 +13,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API } from "../../service/api";
 import AddMembersModal from "./addMembersModal";
 import RenewalMembersModal from "./renewalMembersModal";
-
-type Plan = {
-  id: number;
-  name: string;
-  price: number;
-  durationValue: number;
-  durationUnit: string;
-};
-
-type Member = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  dob: string;
-  address: string | null;
-  profilePhoto: string | null;
-  status: "Active" | "Expired" | "Expiring";
-  joinDate: string;
-  expirationDate: string;
-  planId: number;
-  plans: Plan;
-};
+import QRModal from "./qrModal";
+import EditMemberModal from "./editMemberModal";
+import { Member } from "../../types/types";
 
 export default function Members() {
   const queryClient = useQueryClient();
@@ -43,17 +23,28 @@ export default function Members() {
   const [searchQuery, setSearchQuery] = useState("");
   const [openRenewal, setRenewalOpen] = useState(false);
   const [isRenewalVisible, setIsRenewalVisible] = useState(false);
+  const [renewalMember, setRenewalMember] = useState<Member | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAddVisible, setIsAddVisible] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrValue, setQrValue] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [isEditVisible, setIsEditVisible] = useState(false);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
 
-  const openRenewalModal = () => {
+  const openRenewalModal = (member?: Member) => {
+    if (member) setRenewalMember(member);
+
     setRenewalOpen(true);
     setTimeout(() => setIsRenewalVisible(true), 10);
   };
 
   const closeRenewalModal = () => {
     setIsRenewalVisible(false);
-    setTimeout(() => setRenewalOpen(false), 300);
+    setTimeout(() => {
+      setRenewalOpen(false);
+      setRenewalMember(null);
+    }, 300);
   };
 
   const openAddModal = () => {
@@ -64,6 +55,20 @@ export default function Members() {
   const closeAddModal = () => {
     setIsAddVisible(false);
     setTimeout(() => setIsAddOpen(false), 300);
+  };
+
+  const openEditModal = (member: Member) => {
+    setEditingMember(member);
+    setEditOpen(true);
+    setTimeout(() => setIsEditVisible(true), 10);
+  };
+
+  const closeEditModal = () => {
+    setIsEditVisible(false);
+    setTimeout(() => {
+      setEditOpen(false);
+      setEditingMember(null);
+    }, 300);
   };
 
   const memberQuery = useQuery<Member[]>({
@@ -86,6 +91,17 @@ export default function Members() {
     },
   });
 
+  const updateMemberMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await API.put(`/members/${payload.id}`, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      closeRenewalModal();
+    },
+  });
+
   const handleAddSubmit = (data: any) => {
     createMemberMutation.mutate({
       name: data.name,
@@ -99,9 +115,20 @@ export default function Members() {
     });
   };
 
-  // TODO: Update this to match your renewal logic
   const handleRenewalSubmit = (data: any) => {
-    console.log("Renewing with:", data);
+    if (!renewalMember) return;
+
+    const payload = {
+      ...renewalMember,
+      planId: Number(data.planId),
+      joinDate: data.joinDate,
+    };
+
+    updateMemberMutation.mutate(payload);
+  };
+
+  const handleEditSubmit = (data: any) => {
+    updateMemberMutation.mutate(data);
   };
 
   const aktifCount = members.filter((m) => m.status === "Active").length;
@@ -146,28 +173,46 @@ export default function Members() {
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-base pb-4">Habis dalam 3 hari</p>
+            <p className="text-gray-400 text-sm md:text-base pb-4">
+              Habis dalam 3 hari
+            </p>
             <div className="flex items-end gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold">{akanHabisCount}</h3>
+              <h3 className="text-2xl md:text-3xl font-bold">
+                {akanHabisCount}
+              </h3>
               <span className="text-red-500 text-xs md:text-sm mb-1">-10%</span>
             </div>
-            <p className="text-gray-400 text-xs md:text-sm pt-2">Perlu Perpanjangan Segera</p>
+            <p className="text-gray-400 text-xs md:text-sm pt-2">
+              Perlu Perpanjangan Segera
+            </p>
           </div>
           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-base pb-4">Habis dalam 7 hari</p>
+            <p className="text-gray-400 text-sm md:text-base pb-4">
+              Habis dalam 7 hari
+            </p>
             <div className="flex items-end gap-2">
               <h3 className="text-2xl md:text-3xl font-bold">{aktifCount}</h3>
-              <span className="text-yellow-400 text-xs md:text-sm mb-1">Stabil</span>
+              <span className="text-yellow-400 text-xs md:text-sm mb-1">
+                Stabil
+              </span>
             </div>
-            <p className="text-gray-400 text-xs md:text-sm pt-2">Periode perpanjangan</p>
+            <p className="text-gray-400 text-xs md:text-sm pt-2">
+              Periode perpanjangan
+            </p>
           </div>
           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-base pb-4">Member Kedaluwarsa</p>
+            <p className="text-gray-400 text-sm md:text-base pb-4">
+              Member Kedaluwarsa
+            </p>
             <div className="flex items-end gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold">{tidakAktifCount}</h3>
+              <h3 className="text-2xl md:text-3xl font-bold">
+                {tidakAktifCount}
+              </h3>
               <span className="text-red-500 text-xs md:text-sm mb-1">-5%</span>
             </div>
-            <p className="text-gray-400 text-xs md:text-sm pt-2">Perlu Tindakan Segera</p>
+            <p className="text-gray-400 text-xs md:text-sm pt-2">
+              Perlu Tindakan Segera
+            </p>
           </div>
         </div>
 
@@ -198,40 +243,65 @@ export default function Members() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-800">
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Member</th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Status</th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Paket</th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Kontak</th>
-                  <th className="text-center px-5 py-4 text-gray-400 text-xs uppercase">Ubah</th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+                    Member
+                  </th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+                    Status
+                  </th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+                    Paket
+                  </th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+                    Kontak
+                  </th>
+                  <th className="text-center px-5 py-4 text-gray-400 text-xs uppercase">
+                    Ubah
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {PaginatedMembers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-10 text-center text-gray-400">
+                    <td
+                      colSpan={5}
+                      className="px-5 py-10 text-center text-gray-400"
+                    >
                       No members found
                     </td>
                   </tr>
                 ) : (
                   PaginatedMembers.map((member) => (
-                    <tr key={member.id} className="border-b border-gray-800/50 hover:bg-gray-900/30">
+                    <tr
+                      key={member.id}
+                      className="border-b border-gray-800/50 hover:bg-gray-900/30"
+                    >
                       {/* Name & ID */}
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <img
-                            src={member.profilePhoto || "https://via.placeholder.com/150"}
+                            src={
+                              member.profilePhoto ||
+                              "https://via.placeholder.com/150"
+                            }
                             className="w-10 h-10 rounded-full border border-gray-700 object-cover"
                           />
                           <div>
                             <p className="text-white text-sm">{member.name}</p>
-                            <p className="text-gray-500 text-xs">#GYM-{member.id.substring(0, 8)}</p>
+                            <p className="text-gray-500 text-xs">
+                              #GYM-{member.id.substring(0, 8)}
+                            </p>
                           </div>
                         </div>
                       </td>
 
                       {/* Status */}
                       <td className="px-5 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs ${getStatusColor(member.status)}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs ${getStatusColor(
+                            member.status
+                          )}`}
+                        >
                           <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
                           {member.status}
                         </span>
@@ -239,7 +309,9 @@ export default function Members() {
 
                       {/* Plan Type (UPDATED) */}
                       <td className="px-5 py-4">
-                        <p className="text-white text-sm">{member.plans?.name || "Unknown"}</p>
+                        <p className="text-white text-sm">
+                          {member.plans?.name || "Unknown"}
+                        </p>
                       </td>
 
                       {/* Contact */}
@@ -259,17 +331,28 @@ export default function Members() {
                       {/* Actions */}
                       <td className="px-5 py-4">
                         <div className="flex justify-center gap-2">
-                          <button title="QR Code" className="p-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition">
+                          <button
+                            title="QR Code"
+                            className="p-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition"
+                            onClick={() => {
+                              setQrValue(member.id);
+                              setQrOpen(true);
+                            }}
+                          >
                             <QrCode className="w-4 h-4" />
                           </button>
                           <button
                             title="Renew"
                             className="p-2 bg-yellow-500/10 text-yellow-500 rounded-lg hover:bg-yellow-500 hover:text-black transition"
-                            onClick={openRenewalModal}
+                            onClick={() => openRenewalModal(member)}
                           >
                             <RotateCw className="w-4 h-4" />
                           </button>
-                          <button title="Edit" className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition">
+                          <button
+                            title="Edit"
+                            className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition"
+                            onClick={() => openEditModal(member)}
+                          >
                             <Pencil className="w-4 h-4" />
                           </button>
                         </div>
@@ -283,14 +366,38 @@ export default function Members() {
             {/* Pagination */}
             <div className="flex items-center justify-between px-5 py-4 border-t border-gray-800">
               <p className="text-sm text-gray-500">
-                Showing {(currentPage - 1) * PaginationMember + 1}–{Math.min(currentPage * PaginationMember, members.length)} of {members.length} members
+                Showing {(currentPage - 1) * PaginationMember + 1}–
+                {Math.min(currentPage * PaginationMember, members.length)} of{" "}
+                {members.length} members
               </p>
               <div className="flex items-center gap-2">
-                <button disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} className="px-3 py-1.5 rounded-lg text-sm border border-gray-800 text-gray-400 disabled:opacity-40">‹</button>
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                  className="px-3 py-1.5 rounded-lg text-sm border border-gray-800 text-gray-400 disabled:opacity-40"
+                >
+                  ‹
+                </button>
                 {Array.from({ length: totalPages }).map((_, i) => (
-                  <button key={i} onClick={() => setCurrentPage(i + 1)} className={`px-3 py-1.5 rounded-lg text-sm ${currentPage === i + 1 ? "bg-yellow-500 text-black" : "border border-gray-800 text-gray-400"}`}>{i + 1}</button>
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`px-3 py-1.5 rounded-lg text-sm ${
+                      currentPage === i + 1
+                        ? "bg-yellow-500 text-black"
+                        : "border border-gray-800 text-gray-400"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
                 ))}
-                <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)} className="px-3 py-1.5 rounded-lg text-sm border border-gray-800 text-gray-400 disabled:opacity-40">›</button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  className="px-3 py-1.5 rounded-lg text-sm border border-gray-800 text-gray-400 disabled:opacity-40"
+                >
+                  ›
+                </button>
               </div>
             </div>
           </div>
@@ -303,6 +410,7 @@ export default function Members() {
         onClose={closeRenewalModal}
         onSubmit={handleRenewalSubmit}
         isLoading={createMemberMutation.isPending}
+        member={renewalMember}
       />
 
       <AddMembersModal
@@ -311,6 +419,17 @@ export default function Members() {
         onClose={closeAddModal}
         onSubmit={handleAddSubmit}
       />
+
+      <EditMemberModal
+        open={editOpen}
+        isVisible={isEditVisible}
+        initialData={editingMember}
+        onClose={closeEditModal}
+        onSubmit={handleEditSubmit}
+        isLoading={updateMemberMutation.isPending}
+      />
+
+      <QRModal open={qrOpen} value={qrValue} onClose={() => setQrOpen(false)} />
     </div>
   );
 }
