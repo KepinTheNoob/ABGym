@@ -1,3 +1,8 @@
+import RevenueChart from "../components/revenueChart";
+import AttendanceChart from "../components/attendanceChart"
+import { RecentActivity } from "../components/recentActivity";
+
+
 export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
@@ -37,44 +42,58 @@ export default function Dashboard() {
 
         {/* Revenue Trends */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-6">
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-6 col-span-1 lg:col-span-2 h-48 sm:h-64 flex items-center justify-center text-gray-500">
-            (Revenue Trends Chart)
+          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 col-span-1 lg:col-span-2 min-h-[260px] lg:min-h-[340px]">
+            <RevenueChart />
           </div>
-
           {/* Live Attendance */}
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-6 flex flex-col gap-4">
-            <p className="font-semibold">Live Attendance</p>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-yellow-500" />
-              <div>
-                <p className="text-base sm:text-lg font-bold">Sarah Jenkins</p>
-                <p className="text-green-400 text-xs sm:text-sm">Active</p>
+          <div className="rounded-2xl border border-gray-800 bg-[#161618] p-6 flex flex-col h-full">
+            <div className="flex items-center gap-2 text-gray-300 justify-center">
+              <span>🏆</span>
+              <p className="font-semibold">Live Attendance</p>
+            </div>
+
+            {/* Profile */}
+            <div className="flex-1 flex flex-col items-center justify-center gap-2 pt-2">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full border-[2px] border-yellow-400 flex items-center justify-center bg-gray-900">
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                    ?
+                  </div>
+                </div>
+                <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-[#161618]" />
+              </div>
+
+              <div className="text-center">
+                <p className="text-white text-lg font-bold">Maruzensky</p>
+                <p className="text-green-400 text-sm flex items-center justify-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-400" />
+                  Active
+                </p>
               </div>
             </div>
-            <p className="text-gray-400 text-xs sm:text-sm">Remaining: 124 days</p>
-            <p className="text-gray-400 text-xs sm:text-sm">Time: 08:32 AM</p>
+            <div className="flex justify-between text-gray-400 text-xs sm:text-sm pb-2">
+              <p>Remaining:</p>
+              <p className="text-white">124 days</p>
+            </div>
+
+            <div className="flex justify-between text-gray-400 text-xs sm:text-sm pt-2">
+              <p>Time:</p>
+              <p className="text-white">08:32:15 AM</p>
+            </div>
           </div>
         </div>
 
-        {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-6">
-          {/* Daily Attendance */}
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-6 h-48 sm:h-64 flex items-center justify-center text-gray-500">
-            (Daily Attendance Chart)
+        {/*Bottom Content*/}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mt-6 items-stretch">
+          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 min-h-[240px] lg:min-h-[340px]">
+            <AttendanceChart />
           </div>
 
           {/* Recent Activity */}
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-6 text-gray-300">
-            <p className="font-semibold mb-3">Recent Activity</p>
-            <ul className="space-y-2 text-xs sm:text-sm">
-              <li>Checked-in (2m ago)</li>
-              <li>New Member: Mike Ross (15m ago)</li>
-              <li>David Kim checked-in (24m ago)</li>
-              <li>Payment Received (1h ago)</li>
-              <li>Class Booking: Yoga (1h 15m ago)</li>
-            </ul>
+          <div className="h-full">
+            <RecentActivity />
           </div>
-
+          
           {/* Membership Status */}
           <div className="rounded-xl border border-gray-800 bg-[#161618] p-6">
             <p className="font-semibold mb-4">Membership Status</p>
