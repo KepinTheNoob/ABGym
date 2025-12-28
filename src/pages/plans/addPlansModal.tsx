@@ -39,12 +39,11 @@ export default function PlansModal({
     name: "",
     price: "",
     durationValue: "",
-    durationUnit: "MONTH", // Default
+    durationUnit: "MONTH",
   });
 
-  const [isUnitOpen, setIsUnitOpen] = useState(false); // For custom dropdown
+  const [isUnitOpen, setIsUnitOpen] = useState(false);
 
-  // Prefill
   useEffect(() => {
     if (initialData) {
       setForm({

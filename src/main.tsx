@@ -5,7 +5,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Dashboard from "./pages/dashboard.tsx";
 import AppLayout from "./pages/appLayout.tsx";
 import Members from "./pages/members/members.tsx";
-import Finances from "./pages/finances.tsx";
+import Finances from "./pages/finances/finances.tsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Plans from "./pages/plans/plans.tsx";
 

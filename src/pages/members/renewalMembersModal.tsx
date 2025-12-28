@@ -1,6 +1,18 @@
-// RenewalMembersModal.tsx
 import { ChevronDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query"; // Import useQuery
+import { API } from "../../service/api"; // Ensure this path is correct
+import CalendarPortal from "../../components/calendarPortal";
+import Calendar from "../../components/calendar";
+
+// Define Plan Type
+type Plan = {
+  id: number;
+  name: string;
+  price: number;
+  durationValue: number;
+  durationUnit: "Day" | "Week" | "Month" | "Year";
+};
 
 type RenewalMembersModalProps = {
   open: boolean;
@@ -17,42 +29,80 @@ export default function RenewalMembersModal({
   onSubmit,
   isLoading = false,
 }: RenewalMembersModalProps) {
+  // --- 1. FETCH PLANS ---
+  const { data: plans = [] } = useQuery<Plan[]>({
+    queryKey: ["plans"],
+    queryFn: async () => {
+      const res = await API.get("/plans");
+      return res.data;
+    },
+    enabled: open, // Only fetch when open
+  });
+
   // Local state for the form
   const [formData, setFormData] = useState({
-    planType: "",
-    startDate: "",
+    planId: "", // Changed from planType to planId to match logic
+    joinDate: "", // Using 'joinDate' (start date) for consistency
     paymentMethod: "",
-    amountPaid: 0,
+    amountPaid: "",
   });
 
   const [expirationDate, setExpirationDate] = useState<Date | null>(null);
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
-  // Calculate expiration date automatically
+  // Calendar State
+  const [joinDate, setJoinDate] = useState<Date | undefined>();
+  const [isJoinCalendarOpen, setIsJoinCalendarOpen] = useState(false);
+  const joinRef = useRef<HTMLButtonElement>(null);
+
+  // Sync Calendar selection to form data
   useEffect(() => {
-    if (!formData.planType || !formData.startDate) {
+    if (!joinDate) return;
+    setFormData((prev) => ({
+      ...prev,
+      joinDate: joinDate.toISOString().split("T")[0],
+    }));
+  }, [joinDate]);
+
+  // --- 2. CALCULATE EXPIRATION ---
+  useEffect(() => {
+    if (!formData.planId || !formData.joinDate) {
       setExpirationDate(null);
       return;
     }
 
-    const start = new Date(formData.startDate);
+    // Find selected plan
+    const selectedPlan = plans.find((p) => p.id === Number(formData.planId));
+    if (!selectedPlan) return;
+
+    // Parse date correctly
+    const [year, month, day] = formData.joinDate.split("-").map(Number);
+    const start = new Date(year, month - 1, day);
+
     const expiry = new Date(start);
 
-    switch (formData.planType) {
-      case "weekly":
-        expiry.setDate(start.getDate() + 7);
+    switch (selectedPlan.durationUnit) {
+      case "Day":
+        expiry.setDate(expiry.getDate() + selectedPlan.durationValue);
         break;
-      case "monthly":
-        expiry.setMonth(start.getMonth() + 1);
+      case "Week":
+        expiry.setDate(expiry.getDate() + selectedPlan.durationValue * 7);
         break;
-      case "yearly":
-        expiry.setFullYear(start.getFullYear() + 1);
+      case "Month":
+        expiry.setMonth(expiry.getMonth() + selectedPlan.durationValue);
+        break;
+      case "Year":
+        expiry.setFullYear(expiry.getFullYear() + selectedPlan.durationValue);
         break;
     }
 
+    expiry.setDate(expiry.getDate() + 1);
+
+    expiry.setHours(23, 59, 59, 999);
+
     setExpirationDate(expiry);
-  }, [formData.planType, formData.startDate]);
+  }, [formData.planId, formData.joinDate, plans]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -108,7 +158,7 @@ export default function RenewalMembersModal({
               <label className="text-xs text-gray-400">
                 New Membership Type
               </label>
-              <div className="relative">
+              <div className="relative mt-1">
                 <select
                   onClick={() => setIsMembershipOpen(!isMembershipOpen)}
                   onBlur={() => setIsMembershipOpen(false)}
@@ -116,7 +166,7 @@ export default function RenewalMembersModal({
                     setIsMembershipOpen(false);
                     handleChange(e);
                   }}
-                  name="planType"
+                  name="planId" // Changed to planId
                   className="
                     appearance-none w-full bg-[#0a0a0a] text-white text-sm
                     px-4 pr-10 py-2.5 rounded-lg border border-gray-800
@@ -124,9 +174,12 @@ export default function RenewalMembersModal({
                   "
                 >
                   <option value="">Select membership</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="yearly">Yearly</option>
+                  {/* Dynamic Options */}
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name}
+                    </option>
+                  ))}
                 </select>
 
                 <ChevronDown
@@ -140,14 +193,32 @@ export default function RenewalMembersModal({
               </div>
             </div>
 
-            <div>
+            <div className="relative">
               <label className="text-xs text-gray-400">New Start Date</label>
-              <input
-                type="date"
-                name="startDate"
-                onChange={handleChange}
-                className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-sm"
-              />
+              <button
+                ref={joinRef}
+                type="button"
+                onClick={() => setIsJoinCalendarOpen(!isJoinCalendarOpen)}
+                className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-left text-sm"
+              >
+                {joinDate
+                  ? joinDate.toLocaleDateString("en-GB")
+                  : "Select Date"}
+              </button>
+              {isJoinCalendarOpen && joinRef.current && (
+                <CalendarPortal
+                  anchorEl={joinRef.current}
+                  onClose={() => setIsJoinCalendarOpen(false)}
+                >
+                  <Calendar
+                    value={joinDate}
+                    onSelect={(date) => {
+                      setJoinDate(date);
+                      setIsJoinCalendarOpen(false);
+                    }}
+                  />
+                </CalendarPortal>
+              )}
             </div>
           </div>
 
@@ -158,11 +229,7 @@ export default function RenewalMembersModal({
             </label>
             <div className="mt-1 rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-sm text-yellow-400">
               {expirationDate
-                ? expirationDate.toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })
+                ? expirationDate.toLocaleDateString("en-GB") // dd/mm/yyyy
                 : "—"}
             </div>
           </div>
@@ -174,7 +241,7 @@ export default function RenewalMembersModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-gray-400">Payment Method</label>
-                <div className="relative group">
+                <div className="relative group mt-1">
                   <select
                     name="paymentMethod"
                     onClick={() => setIsPaymentOpen(!isPaymentOpen)}

@@ -1,13 +1,17 @@
 import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { API } from "../../service/api";
 import Calendar from "../../components/calendar";
 import CalendarPortal from "../../components/calendarPortal";
+import { Plan } from "../../types/types";
 
 type AddMembersModalProps = {
   open: boolean;
   isVisible: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
+  isLoading?: boolean;
 };
 
 const AddMembersModal = ({
@@ -15,8 +19,17 @@ const AddMembersModal = ({
   isVisible,
   onClose,
   onSubmit,
+  isLoading = false,
 }: AddMembersModalProps) => {
-  // 1. STATE: Removed 'amountPaid'
+  const { data: plans = [] } = useQuery<Plan[]>({
+    queryKey: ["plans"],
+    queryFn: async () => {
+      const res = await API.get("/plans");
+      return res.data;
+    },
+    enabled: open,
+  });
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -24,7 +37,6 @@ const AddMembersModal = ({
     dob: "",
     address: "",
     profilePhoto: null,
-    status: "Aktif",
     joinDate: "",
     paymentMethod: "",
     planId: "",
@@ -33,56 +45,66 @@ const AddMembersModal = ({
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [expirationDate, setExpirationDate] = useState<Date | null>(null);
 
-  // Date of birth date
   const [dobDate, setDobDate] = useState<Date | undefined>();
   const [isDobCalendarOpen, setIsDobCalendarOpen] = useState(false);
 
-  // Membership Start date
   const [joinDate, setJoinDate] = useState<Date | undefined>();
   const [isJoinCalendarOpen, setIsJoinCalendarOpen] = useState(false);
 
-  // auto flip portal
   const joinRef = useRef<HTMLButtonElement>(null);
   const dobRef = useRef<HTMLButtonElement>(null);
 
-  
-
-  // date member
   useEffect(() => {
-  if (!joinDate) return;
-
-  setFormData((prev) => ({
-    ...prev,
-  joinDate: joinDate.toISOString().split("T")[0],
-  }));
+    if (!joinDate) return;
+    setFormData((prev) => ({
+      ...prev,
+      joinDate: joinDate.toISOString().split("T")[0],
+    }));
   }, [joinDate]);
 
-  // dob
   useEffect(() => {
-  if (!dobDate) return;
+    if (!dobDate) return;
+    setFormData((prev) => ({
+      ...prev,
+      dob: dobDate.toISOString().split("T")[0],
+    }));
+  }, [dobDate]);
 
-  setFormData((prev) => ({
-    ...prev,
-    dob: dobDate.toISOString().split("T")[0],
-  }));
-}, [dobDate]);
-
-
-  // 2. EFFECT: Calculate Expiration
   useEffect(() => {
     if (!formData.planId || !formData.joinDate) {
       setExpirationDate(null);
       return;
     }
-    const start = new Date(formData.joinDate);
+
+    const selectedPlan = plans.find((p) => p.id === Number(formData.planId));
+    if (!selectedPlan) return;
+
+    const [year, month, day] = formData.joinDate.split("-").map(Number);
+    const start = new Date(year, month - 1, day);
+
     const expiry = new Date(start);
 
-    if (formData.planId === "1") expiry.setDate(start.getDate() + 7);
-    if (formData.planId === "2") expiry.setMonth(start.getMonth() + 1);
-    if (formData.planId === "3") expiry.setFullYear(start.getFullYear() + 1);
+    switch (selectedPlan.durationUnit) {
+      case "Day":
+        expiry.setDate(expiry.getDate() + selectedPlan.durationValue);
+        break;
+      case "Week":
+        expiry.setDate(expiry.getDate() + selectedPlan.durationValue * 7);
+        break;
+      case "Month":
+        expiry.setMonth(expiry.getMonth() + selectedPlan.durationValue);
+        break;
+      case "Year":
+        expiry.setFullYear(expiry.getFullYear() + selectedPlan.durationValue);
+        break;
+    }
+
+    expiry.setDate(expiry.getDate() + 1);
+
+    expiry.setHours(23, 59, 59, 999);
 
     setExpirationDate(expiry);
-  }, [formData.planId, formData.joinDate]);
+  }, [formData.planId, formData.joinDate, plans]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -113,6 +135,7 @@ const AddMembersModal = ({
             : "scale-95 opacity-0 translate-y-4"
         }`}
       >
+        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-bold">Add New Member</h3>
@@ -176,34 +199,37 @@ const AddMembersModal = ({
                   required
                 />
               </div>
+
+              {/* DOB Calendar */}
               <div className="relative">
                 <label className="text-xs text-gray-400">Date of Birth</label>
-
-              <button
-                ref={dobRef}
-                type="button"
-                onClick={() => setIsDobCalendarOpen(!isDobCalendarOpen)}
-                className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-left text-sm"
-              >
-                {dobDate ? dobDate.toLocaleDateString("en-GB") : "Select Date"}
-              </button>
-
-              {isDobCalendarOpen && dobRef.current && (
-                <CalendarPortal
-                  anchorEl={dobRef.current}
-                  onClose={() => setIsDobCalendarOpen(false)}
+                <button
+                  ref={dobRef}
+                  type="button"
+                  onClick={() => setIsDobCalendarOpen(!isDobCalendarOpen)}
+                  className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-left text-sm"
                 >
-                  <Calendar
-                    value={dobDate}
-                    onSelect={(date) => {
-                      setDobDate(date);
-                      setIsDobCalendarOpen(false);
-                    }}
-                  />
-                </CalendarPortal>
-              )}
+                  {dobDate
+                    ? dobDate.toLocaleDateString("en-GB")
+                    : "Select Date"}
+                </button>
+                {isDobCalendarOpen && dobRef.current && (
+                  <CalendarPortal
+                    anchorEl={dobRef.current}
+                    onClose={() => setIsDobCalendarOpen(false)}
+                  >
+                    <Calendar
+                      value={dobDate}
+                      onSelect={(date) => {
+                        setDobDate(date);
+                        setIsDobCalendarOpen(false);
+                      }}
+                    />
+                  </CalendarPortal>
+                )}
               </div>
             </div>
+
             <div className="mt-4">
               <label className="text-xs text-gray-400">Address</label>
               <input
@@ -219,6 +245,7 @@ const AddMembersModal = ({
           <div>
             <h4 className="text-sm font-semibold mb-3">Membership Details</h4>
             <div className="grid grid-cols-2 gap-4">
+              {/* Plan Selector */}
               <div className="relative">
                 <label className="text-xs text-gray-400">Membership Type</label>
                 <div className="relative mt-1">
@@ -230,13 +257,16 @@ const AddMembersModal = ({
                       handleChange(e);
                     }}
                     name="planId"
-                    className="input appearance-none bg-[#0a0a0a] border border-gray-800 rounded px-3 py-2 text-sm w-full"
+                    className="input appearance-none bg-[#0a0a0a] border border-gray-800 rounded px-3 py-2 text-sm w-full cursor-pointer"
                     required
                   >
                     <option value="">Select Membership</option>
-                    <option value="1">Weekly</option>
-                    <option value="2">Monthly</option>
-                    <option value="3">Yearly</option>
+                    {/* --- DYNAMIC OPTIONS MAPPING --- */}
+                    {plans.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown
                     className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform duration-200 ${
@@ -245,36 +275,43 @@ const AddMembersModal = ({
                   />
                 </div>
               </div>
-              <div>
-                <label className="text-xs text-gray-400">Start Date</label>
 
-              <button
-                ref={joinRef}
-                type="button"
-                onClick={() => setIsJoinCalendarOpen(!isJoinCalendarOpen)}
-                className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-left text-sm"
-              >
-                {joinDate ? joinDate.toLocaleDateString("en-GB") : "Select Date"}
-              </button>
-              {isJoinCalendarOpen && joinRef.current && (
-                <CalendarPortal
-                  anchorEl={joinRef.current}
-                  onClose={() => setIsJoinCalendarOpen(false)}
+              {/* Start Date Calendar */}
+              <div className="relative">
+                <label className="text-xs text-gray-400">Start Date</label>
+                <button
+                  ref={joinRef}
+                  type="button"
+                  onClick={() => setIsJoinCalendarOpen(!isJoinCalendarOpen)}
+                  className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-left text-sm"
                 >
-                  <Calendar
-                    value={joinDate}
-                    onSelect={(date) => {
-                      setJoinDate(date);
-                      setIsJoinCalendarOpen(false);
-                    }}
-                  />
-                </CalendarPortal>
-              )}
+                  {joinDate
+                    ? joinDate.toLocaleDateString("en-GB")
+                    : "Select Date"}
+                </button>
+                {isJoinCalendarOpen && joinRef.current && (
+                  <CalendarPortal
+                    anchorEl={joinRef.current}
+                    onClose={() => setIsJoinCalendarOpen(false)}
+                  >
+                    <Calendar
+                      value={joinDate}
+                      onSelect={(date) => {
+                        setJoinDate(date);
+                        setIsJoinCalendarOpen(false);
+                      }}
+                    />
+                  </CalendarPortal>
+                )}
               </div>
             </div>
+
+            {/* Expiration Display */}
             <div className="mt-3 text-sm text-yellow-400">
               Expiration Date:{" "}
-              {expirationDate ? expirationDate.toLocaleDateString() : "--"}
+              {expirationDate
+                ? expirationDate.toLocaleDateString("en-GB")
+                : "--"}
             </div>
           </div>
 
@@ -282,6 +319,7 @@ const AddMembersModal = ({
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-800">
             <button
               type="button"
+              disabled={isLoading}
               onClick={onClose}
               className="px-4 py-2 rounded-lg bg-gray-700 text-sm hover:bg-gray-600"
             >
@@ -289,9 +327,10 @@ const AddMembersModal = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-[#F0B100] text-black font-bold text-sm hover:bg-[#d9a000]"
+              disabled={isLoading}
+              className="px-4 py-2 rounded-lg bg-[#F0B100] text-black font-bold text-sm hover:bg-[#d9a000] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Member
+              {isLoading ? "Saving..." : "Add Member"}
             </button>
           </div>
         </form>

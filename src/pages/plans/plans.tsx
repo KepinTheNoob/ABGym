@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pencil, Trash2, Plus, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API } from "../../service/api";
@@ -38,14 +38,11 @@ export default function Plans() {
     },
   });
 
-  // --- FIX 1: Update Payload to match new Backend Schema ---
   const updateMutation = useMutation({
     mutationFn: async (plan: Plan) => {
       const res = await API.put(`/plans/${plan.id}`, {
         name: plan.name,
         price: plan.price,
-        // ❌ REMOVED: durationDays: plan.durationDays
-        // ✅ ADDED:
         durationValue: plan.durationValue,
         durationUnit: plan.durationUnit,
       });
@@ -83,12 +80,9 @@ export default function Plans() {
     setTimeout(() => setOpen(false), 300);
   };
 
-  // --- FIX 2: Update Argument Type to match Modal Output ---
   const handleSubmit = (data: {
     name: string;
     price: number;
-    // ❌ REMOVED: durationDays: number;
-    // ✅ ADDED:
     durationValue: number;
     durationUnit: string;
   }) => {
