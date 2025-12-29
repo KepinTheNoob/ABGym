@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Member } from "../../types/types";
 import bg from "../../assets/CardBg.png"
+import html2canvas from "html2canvas";
+
 
 type QRModalProps = {
   open: boolean;
@@ -12,6 +14,8 @@ type QRModalProps = {
 export default function QRModal({ open, onClose, member }: QRModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "-";
@@ -22,6 +26,21 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
       timeZone: "UTC",
     });
   };
+
+  const downloadCard = async () => {
+  if (!cardRef.current) return;
+
+  const canvas = await html2canvas(cardRef.current, {
+    backgroundColor: null,
+    scale: 2,
+  });
+
+  const link = document.createElement("a");
+  link.download = `GYM-${member?.id.substring(0, 8)}.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+};
+
 
   useEffect(() => {
     if (open) {
@@ -82,14 +101,14 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${bg})` }}
         />
-
+    
         {/* Dark overlay supaya konten tetap terbaca */}
         <div className="absolute inset-0 bg-black/60" />
 
         {/* Content wrapper */}
         <div className="relative z-10">
 
-
+          
         {/* QR Code Area */}
         <div className="bg-[#F3EFE0] rounded-2xl p-4 sm:p-5 mb-5 sm:mb-6 flex justify-center items-center shadow-inner mx-auto aspect-square w-full max-w-[240px]">
           <QRCodeSVG
@@ -142,6 +161,14 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
             </span>
           </div>
         </div>
+
+        <button
+        onClick={downloadCard}
+        className="w-full mb-5 py-2 mt-6 rounded-xl bg-[#C99C33] text-black font-bold text-sm hover:bg-[#d9a000] transition"
+      >
+        Download QR Card
+      </button>
+
       </div>
     </div>
   </div>
