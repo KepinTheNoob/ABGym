@@ -16,28 +16,40 @@ export default function Dashboard() {
         {/* Top Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-base">Total Active Members</p>
-            <h3 className="text-2xl md:text-3xl font-bold">1,240</h3>
-            <p className="text-red-500 text-xs md:text-sm">-2% vs last month</p>
-          </div>
+            <p className="text-gray-400 text-sm md:text-base pb-4">Total Member Aktif</p>
+              <div className="flex items-end gap-2">
+               <h3 className="text-2xl md:text-3xl font-bold">1370</h3>
+               <span className="text-green-400 text-xs md:text-sm mb-1">-2%</span>
+             </div>
+             <span className="text-gray-400 text-xs md:text-sm mb-1">vs Last month</span>
+           </div>
 
           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-base">Monthly Revenue</p>
-            <h3 className="text-2xl md:text-3xl font-bold">$45,200</h3>
-            <p className="text-green-500 text-xs md:text-sm">+12.5% vs last month</p>
-          </div>
+            <p className="text-gray-400 text-sm md:text-base pb-4">Pendapatan Bulanan</p>
+              <div className="flex items-end gap-2">
+               <h3 className="text-2xl md:text-3xl font-bold">Rp. 1.500.000</h3>
+               <span className="text-green-400 text-xs md:text-sm mb-1">+2%</span>
+             </div>
+             <span className="text-gray-400 text-xs md:text-sm mb-1">vs Last month</span>
+           </div>
 
           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-base">New Members Today</p>
-            <h3 className="text-2xl md:text-3xl font-bold">+6</h3>
-            <p className="text-green-500 text-xs md:text-sm">+1.5% vs yesterday</p>
-          </div>
+            <p className="text-gray-400 text-sm md:text-base pb-4">Member Baru Hari ini</p>
+              <div className="flex items-end gap-2">
+               <h3 className="text-2xl md:text-3xl font-bold">13</h3>
+               <span className="text-red-400 text-xs md:text-sm mb-1">+2%</span>
+             </div>
+             <span className="text-gray-400 text-xs md:text-sm mb-1">vs Yesterday</span>
+           </div>
 
           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-base">Expired Members</p>
-            <h3 className="text-2xl md:text-3xl font-bold">85</h3>
-            <p className="text-red-500 text-xs md:text-sm">-7% action needed</p>
-          </div>
+            <p className="text-gray-400 text-sm md:text-base pb-4">Member Kadaluarsa</p>
+              <div className="flex items-end gap-2">
+               <h3 className="text-2xl md:text-3xl font-bold">13</h3>
+               <span className="text-red-400 text-xs md:text-sm mb-1">+2%</span>
+             </div>
+             <span className="text-gray-400 text-xs md:text-sm mb-1">vs Yesterday</span>
+           </div>
         </div>
 
         {/* Revenue Trends */}

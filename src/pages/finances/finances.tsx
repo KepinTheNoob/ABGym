@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -53,6 +55,23 @@ export default function Finances() {
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAddVisible, setIsAddVisible] = useState(false);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await API.delete(`/transactions/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success("Transaction deleted");
+    },
+  });
+
+
+  const handleDelete = (id: string) => {
+    if (confirm("Delete this transaction?")) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const openAddModal = () => {
     setIsAddOpen(true);
@@ -360,7 +379,8 @@ export default function Finances() {
                     <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Category</th>
                     <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Date</th>
                     <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Type</th>
-                    <th className="text-center px-5 py-4 text-gray-400 text-xs uppercase">Amount</th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Amount</th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
@@ -381,8 +401,24 @@ export default function Finances() {
                           {txn.type}
                         </span>
                       </td>
-                      <td className={`px-6 py-4 text-right font-medium text-sm ${txn.type === "Income" ? "text-green-500" : "text-red-500"}`}>
-                        {txn.type === "Income" ? "+" : "-"}Rp{Number(txn.amount).toFixed(2)}
+                      <td className={`px-6 py-4 text-left font-medium text-sm ${txn.type === "Income" ? "text-green-500" : "text-red-500"}`}>
+                        {txn.type === "Income" ? "+" : "-"}Rp {Number(txn.amount).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleDelete(txn.id)}
+                            disabled={deleteMutation.isPending}
+                            className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition disabled:opacity-50"
+                          >
+                            {deleteMutation.isPending &&
+                            deleteMutation.variables === txn.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )))}

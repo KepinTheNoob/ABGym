@@ -244,23 +244,20 @@ export default function Members() {
              <p className="text-gray-400 text-sm md:text-base pb-4">Habis dalam 3 hari</p>
              <div className="flex items-end gap-2">
                <h3 className="text-2xl md:text-3xl font-bold">{akanHabisCount}</h3>
-               <span className="text-red-500 text-xs md:text-sm mb-1">-10%</span>
              </div>
              <p className="text-gray-400 text-xs md:text-sm pt-2">Perlu Perpanjangan Segera</p>
            </div>
            <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
              <p className="text-gray-400 text-sm md:text-base pb-4">Habis dalam 7 hari</p>
              <div className="flex items-end gap-2">
-               <h3 className="text-2xl md:text-3xl font-bold">{aktifCount}</h3>
-               <span className="text-yellow-400 text-xs md:text-sm mb-1">Stabil</span>
+               <h3 className="text-yellow-400 text-2xl md:text-3xl font-bold">{aktifCount}</h3>
              </div>
              <p className="text-gray-400 text-xs md:text-sm pt-2">Periode perpanjangan</p>
            </div>
            <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
              <p className="text-gray-400 text-sm md:text-base pb-4">Member Kedaluwarsa</p>
              <div className="flex items-end gap-2">
-               <h3 className="text-2xl md:text-3xl font-bold">{tidakAktifCount}</h3>
-               <span className="text-red-500 text-xs md:text-sm mb-1">-5%</span>
+               <h3 className="text-red-600 text-2xl md:text-3xl font-bold">{tidakAktifCount}</h3>
              </div>
              <p className="text-gray-400 text-xs md:text-sm pt-2">Perlu Tindakan Segera</p>
            </div>

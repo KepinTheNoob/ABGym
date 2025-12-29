@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Member } from "../../types/types";
+import bg from "../../assets/CardBg.png"
 
 type QRModalProps = {
   open: boolean;
@@ -66,16 +67,29 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
       <div
         ref={modalRef}
         className={`
-      bg-[#161618] rounded-[2rem] shadow-2xl text-center
-      w-full max-w-[280px] p-5 sm:p-6 
-      transform transition-all duration-300
-      ${
-        isVisible
-          ? "scale-100 opacity-100 translate-y-0"
-          : "scale-95 opacity-0 translate-y-4"
-      }
-    `}
+          relative overflow-hidden
+          rounded-[2rem] shadow-2xl text-center
+          w-full max-w-[280px] p-5 sm:p-6 
+          transform transition-all duration-300
+          ${
+            isVisible
+              ? "scale-100 opacity-100 translate-y-0"
+              : "scale-95 opacity-0 translate-y-4"
+          }
+        `}
       >
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${bg})` }}
+        />
+
+        {/* Dark overlay supaya konten tetap terbaca */}
+        <div className="absolute inset-0 bg-black/60" />
+
+        {/* Content wrapper */}
+        <div className="relative z-10">
+
+
         {/* QR Code Area */}
         <div className="bg-[#F3EFE0] rounded-2xl p-4 sm:p-5 mb-5 sm:mb-6 flex justify-center items-center shadow-inner mx-auto aspect-square w-full max-w-[240px]">
           <QRCodeSVG
@@ -121,14 +135,15 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
           </div>
 
           {/* Row 3: Valid Until */}
-          <div className="flex justify-between items-center pt-3 pb-1">
+          <div className="flex justify-between pt-3">
             <span className="text-gray-400/80">Valid Until</span>
             <span className="text-[#C99C33] font-bold">
-              {formatDate(member.expirationDate) || "Active"}
+              {formatDate(member.expirationDate)}
             </span>
           </div>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }
