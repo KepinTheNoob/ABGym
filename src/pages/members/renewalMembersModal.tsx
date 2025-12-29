@@ -1,4 +1,4 @@
-import { ChevronDown, X } from "lucide-react"; // Added X icon
+import { ChevronDown, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { API } from "../../service/api";
@@ -284,7 +284,7 @@ export default function RenewalMembersModal({
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Amount Paid</label>
                 <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">Rp</span>
                     <input
                     name="amountPaid"
                     value={formData.amountPaid}

@@ -1,31 +1,40 @@
 import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { Member } from "../../types/types";
 
 type QRModalProps = {
   open: boolean;
   onClose: () => void;
-  value: string;
+  member: Member | null;
 };
 
-export default function QRModal({ open, onClose, value }: QRModalProps) {
+export default function QRModal({ open, onClose, member }: QRModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  // Handle animation state
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+  };
+
   useEffect(() => {
     if (open) {
-      setTimeout(() => setIsVisible(true), 10); // Trigger animation after mount
+      setTimeout(() => setIsVisible(true), 10);
     } else {
       setIsVisible(false);
     }
   }, [open]);
 
-  // Handle closing logic with animation delay
   const handleClose = () => {
     setIsVisible(false);
     setTimeout(() => {
       onClose();
-    }, 300); // Wait for transition duration before unmounting
+    }, 300);
   };
 
   useEffect(() => {
@@ -42,39 +51,83 @@ export default function QRModal({ open, onClose, value }: QRModalProps) {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [open]); // Removed onClose from dependency to prevent stale closure issues if onClose changes rapidly, though strictly ok here. Better to rely on handleClose.
+  }, [open]);
 
-  if (!open) return null;
+  if (!open || !member) return null;
 
   return (
     <div
       className={`
-        fixed inset-0 z-50 flex items-center justify-center
-        bg-black/60 transition-opacity duration-300
-        ${isVisible ? "opacity-100" : "opacity-0"}
-      `}
+    fixed inset-0 z-50 flex items-center justify-center
+    bg-black/70 transition-opacity duration-300 p-4
+    ${isVisible ? "opacity-100" : "opacity-0 pointer-events-none"}
+  `}
     >
       <div
         ref={modalRef}
         className={`
-          bg-[#161618] rounded-xl p-6 w-[280px] text-center
-          transform transition-all duration-300
-          ${
-            isVisible
-              ? "scale-100 opacity-100 translate-y-0"
-              : "scale-95 opacity-0 translate-y-4"
-          }
-        `}
+      bg-[#161618] rounded-[2rem] shadow-2xl text-center
+      w-full max-w-[280px] p-5 sm:p-6 
+      transform transition-all duration-300
+      ${
+        isVisible
+          ? "scale-100 opacity-100 translate-y-0"
+          : "scale-95 opacity-0 translate-y-4"
+      }
+    `}
       >
-        <h3 className="text-white font-semibold mb-4">Member QR Code</h3>
-
-        <div className="bg-white p-3 rounded-lg inline-block">
-          <QRCodeSVG value={value} size={180} />
+        {/* QR Code Area */}
+        <div className="bg-[#F3EFE0] rounded-2xl p-4 sm:p-5 mb-5 sm:mb-6 flex justify-center items-center shadow-inner mx-auto aspect-square w-full max-w-[240px]">
+          <QRCodeSVG
+            value={member.id}
+            style={{ width: "100%", height: "100%" }}
+            fgColor="#161618"
+            bgColor="transparent"
+          />
         </div>
 
-        <p className="text-gray-400 text-xs mt-3">
-          Scan for member verification
-        </p>
+        {/* Plan badge - Dynamic based on Member Plan */}
+        <div className="flex justify-center mb-3">
+          <span className="px-6 py-2 sm:px-8 sm:py-2.5 rounded-full bg-[#C99C33] text-[#161618] font-bold text-xs sm:text-sm tracking-wider uppercase shadow-md whitespace-nowrap">
+            {member.plans?.name || "MEMBER"}
+          </span>
+        </div>
+
+        {/* Decorative Lines */}
+        <div className="flex items-center justify-center gap-3 mb-6 sm:mb-8 text-[#C99C33] opacity-90">
+          <div className="h-px w-4 sm:w-6 bg-[#C99C33]/40"></div>
+          <p className="text-[0.65rem] sm:text-[0.7rem] tracking-[0.25em] font-semibold uppercase whitespace-nowrap">
+            OFFICIAL CARD
+          </p>
+          <div className="h-px w-4 sm:w-6 bg-[#C99C33]/40"></div>
+        </div>
+
+        {/* Info Section */}
+        <div className="text-left flex flex-col gap-1 text-xs sm:text-sm font-medium">
+          {/* Row 1: ID */}
+          <div className="flex justify-between items-center py-3 border-b border-white/10">
+            <span className="text-gray-400/80">Member ID</span>
+            <span className="text-[#C99C33] font-bold tracking-wider truncate max-w-[150px]">
+              GYM-{member.id.substring(0, 8)}
+            </span>
+          </div>
+
+          {/* Row 2: Member Since */}
+          <div className="flex justify-between items-center py-3 border-b border-white/10">
+            <span className="text-gray-400/80">Member Since</span>
+            <span className="text-white font-semibold">
+              {formatDate(member.joinDate)}
+            </span>
+          </div>
+
+          {/* Row 3: Valid Until */}
+          <div className="flex justify-between items-center pt-3 pb-1">
+            <span className="text-gray-400/80">Valid Until</span>
+            <span className="text-[#C99C33] font-bold">
+              {formatDate(member.expirationDate) || "Active"}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

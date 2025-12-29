@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Search,
   ChevronDown,
@@ -8,6 +8,7 @@ import {
   Mail,
   Phone,
   QrCode,
+  Check,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API } from "../../service/api";
@@ -20,21 +21,57 @@ import { Member } from "../../types/types";
 export default function Members() {
   const queryClient = useQueryClient();
 
+  // --- STATE MANAGEMENT ---
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filtering & Sorting State
+  const [statusFilter, setStatusFilter] = useState("All"); // All, Active, Expiring, Expired
+  const [sortOrder, setSortOrder] = useState("Newest"); // Newest, Oldest, A-Z, Z-A
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
+  // Modal States
   const [openRenewal, setRenewalOpen] = useState(false);
   const [isRenewalVisible, setIsRenewalVisible] = useState(false);
   const [renewalMember, setRenewalMember] = useState<Member | null>(null);
+  
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAddVisible, setIsAddVisible] = useState(false);
+  
   const [qrOpen, setQrOpen] = useState(false);
-  const [qrValue, setQrValue] = useState("");
+  const [qrMember, setQrMember] = useState<Member | null>(null);
+  
   const [editOpen, setEditOpen] = useState(false);
   const [isEditVisible, setIsEditVisible] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
 
+  // Refs for clicking outside dropdowns
+  const statusMenuRef = useRef<HTMLDivElement>(null);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
+
+  // --- HANDLERS ---
+  
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
+        setShowStatusMenu(false);
+      }
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
+        setShowSortMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Reset pagination when filter/search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
   const openRenewalModal = (member?: Member) => {
     if (member) setRenewalMember(member);
-
     setRenewalOpen(true);
     setTimeout(() => setIsRenewalVisible(true), 10);
   };
@@ -71,6 +108,7 @@ export default function Members() {
     }, 300);
   };
 
+  // --- QUERIES & MUTATIONS ---
   const memberQuery = useQuery<Member[]>({
     queryKey: ["members"],
     queryFn: async () => {
@@ -99,31 +137,24 @@ export default function Members() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       closeRenewalModal();
+      closeEditModal(); // Added closing edit modal on success
     },
   });
 
   const handleAddSubmit = (data: any) => {
     createMemberMutation.mutate({
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      address: data.address,
-      dob: data.dob,
-      profilePhoto: null,
-      joinDate: data.joinDate,
+      ...data,
       planId: Number(data.planId),
     });
   };
 
   const handleRenewalSubmit = (data: any) => {
     if (!renewalMember) return;
-
     const payload = {
       ...renewalMember,
       planId: Number(data.planId),
       joinDate: data.joinDate,
     };
-
     updateMemberMutation.mutate(payload);
   };
 
@@ -131,22 +162,58 @@ export default function Members() {
     updateMemberMutation.mutate(data);
   };
 
+  // --- STATS CALCULATION ---
   const aktifCount = members.filter((m) => m.status === "Active").length;
   const akanHabisCount = members.filter((m) => m.status === "Expiring").length;
   const tidakAktifCount = members.filter((m) => m.status === "Expired").length;
 
+  // --- FILTERING & SORTING LOGIC ---
+  
+  // 1. Filter
+  const filteredMembers = members.filter((m) => {
+    const matchesSearch = 
+      m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      m.id.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = 
+      statusFilter === "All" || m.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // 2. Sort
+  const processedMembers = filteredMembers.sort((a, b) => {
+    if (sortOrder === "Newest") {
+      // Assuming joinDate exists, otherwise use ID or created_at
+      return new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime();
+    }
+    if (sortOrder === "Oldest") {
+      return new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime();
+    }
+    if (sortOrder === "A-Z") {
+      return a.name.localeCompare(b.name);
+    }
+    if (sortOrder === "Z-A") {
+      return b.name.localeCompare(a.name);
+    }
+    return 0;
+  });
+
+  // 3. Pagination
   const PaginationMember = 6;
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(members.length / PaginationMember);
-  const PaginatedMembers = members.slice(
+  const totalPages = Math.ceil(processedMembers.length / PaginationMember);
+  
+  // Use processedMembers instead of raw members
+  const PaginatedMembers = processedMembers.slice(
     (currentPage - 1) * PaginationMember,
     currentPage * PaginationMember
   );
 
   const getStatusColor = (status: string) => {
     if (status === "Active") return "bg-green-500/10 text-green-400";
-    else if (status === "Expired") return "bg-red-500/10 text-red-400";
-    else if (status === "Expiring") return "bg-yellow-400/10 text-yellow-400";
+    if (status === "Expired") return "bg-red-500/10 text-red-400";
+    if (status === "Expiring") return "bg-yellow-400/10 text-yellow-400";
     return "bg-gray-500/10 text-gray-400";
   };
 
@@ -170,56 +237,41 @@ export default function Members() {
           </p>
         </div>
 
-        {/* Stats */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-base pb-4">
-              Habis dalam 3 hari
-            </p>
-            <div className="flex items-end gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold">
-                {akanHabisCount}
-              </h3>
-              <span className="text-red-500 text-xs md:text-sm mb-1">-10%</span>
-            </div>
-            <p className="text-gray-400 text-xs md:text-sm pt-2">
-              Perlu Perpanjangan Segera
-            </p>
-          </div>
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-base pb-4">
-              Habis dalam 7 hari
-            </p>
-            <div className="flex items-end gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold">{aktifCount}</h3>
-              <span className="text-yellow-400 text-xs md:text-sm mb-1">
-                Stabil
-              </span>
-            </div>
-            <p className="text-gray-400 text-xs md:text-sm pt-2">
-              Periode perpanjangan
-            </p>
-          </div>
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-base pb-4">
-              Member Kedaluwarsa
-            </p>
-            <div className="flex items-end gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold">
-                {tidakAktifCount}
-              </h3>
-              <span className="text-red-500 text-xs md:text-sm mb-1">-5%</span>
-            </div>
-            <p className="text-gray-400 text-xs md:text-sm pt-2">
-              Perlu Tindakan Segera
-            </p>
-          </div>
+          {/* ... Stats cards (Same as before) ... */}
+           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
+             <p className="text-gray-400 text-sm md:text-base pb-4">Habis dalam 3 hari</p>
+             <div className="flex items-end gap-2">
+               <h3 className="text-2xl md:text-3xl font-bold">{akanHabisCount}</h3>
+               <span className="text-red-500 text-xs md:text-sm mb-1">-10%</span>
+             </div>
+             <p className="text-gray-400 text-xs md:text-sm pt-2">Perlu Perpanjangan Segera</p>
+           </div>
+           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
+             <p className="text-gray-400 text-sm md:text-base pb-4">Habis dalam 7 hari</p>
+             <div className="flex items-end gap-2">
+               <h3 className="text-2xl md:text-3xl font-bold">{aktifCount}</h3>
+               <span className="text-yellow-400 text-xs md:text-sm mb-1">Stabil</span>
+             </div>
+             <p className="text-gray-400 text-xs md:text-sm pt-2">Periode perpanjangan</p>
+           </div>
+           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
+             <p className="text-gray-400 text-sm md:text-base pb-4">Member Kedaluwarsa</p>
+             <div className="flex items-end gap-2">
+               <h3 className="text-2xl md:text-3xl font-bold">{tidakAktifCount}</h3>
+               <span className="text-red-500 text-xs md:text-sm mb-1">-5%</span>
+             </div>
+             <p className="text-gray-400 text-xs md:text-sm pt-2">Perlu Tindakan Segera</p>
+           </div>
         </div>
 
-        {/* Table */}
-        <div className="mt-8 bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden">
+        {/* Table & Filters */}
+        <div className="mt-8 bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-lg">
           <div className="p-5 border-b border-gray-800">
             <div className="flex flex-wrap gap-4">
+              
+              {/* Search Bar */}
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
@@ -227,68 +279,120 @@ export default function Members() {
                   placeholder="Cari nama atau ID member..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#0a0a0a] text-white text-sm pl-10 pr-4 py-2.5 rounded-lg border border-gray-800 focus:outline-none focus:border-yellow-500"
+                  className="w-full bg-[#0a0a0a] text-white text-sm pl-10 pr-4 py-2.5 rounded-lg border border-gray-800 focus:outline-none focus:border-yellow-500 transition-colors"
                 />
               </div>
-              <button className="flex items-center gap-2 bg-[#0a0a0a] text-yellow-500 px-4 py-2.5 rounded-lg border border-gray-800 text-sm">
-                Status: Semua <ChevronDown className="w-4 h-4" />
-              </button>
-              <button className="flex items-center gap-2 bg-[#0a0a0a] text-white px-4 py-2.5 rounded-lg border border-gray-800 text-sm">
-                Urutkan <SlidersHorizontal className="w-4 h-4" />
-              </button>
+
+              {/* Status Filter Button */}
+              <div className="relative" ref={statusMenuRef}>
+                <button 
+                  onClick={() => setShowStatusMenu(!showStatusMenu)}
+                  className="flex items-center gap-2 bg-[#0a0a0a] text-yellow-500 px-4 py-2.5 rounded-lg border border-gray-800 text-sm hover:bg-gray-900 transition-colors min-w-[160px] justify-between"
+                >
+                  <span>Status: <span className="font-semibold">{statusFilter}</span></span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showStatusMenu ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showStatusMenu && (
+                  <div className="absolute top-full mt-2 right-0 w-48 bg-[#161618] border border-gray-800 rounded-xl shadow-xl z-20 overflow-hidden">
+                    {["All", "Active", "Expiring", "Expired"].map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => {
+                          setStatusFilter(status);
+                          setShowStatusMenu(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors flex items-center justify-between
+                          ${statusFilter === status ? "text-yellow-500 bg-gray-800/50" : "text-gray-300"}
+                        `}
+                      >
+                        {status}
+                        {statusFilter === status && <Check className="w-3.5 h-3.5" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Sort Button */}
+              <div className="relative" ref={sortMenuRef}>
+                <button 
+                  onClick={() => setShowSortMenu(!showSortMenu)}
+                  className="flex items-center gap-2 bg-[#0a0a0a] text-white px-4 py-2.5 rounded-lg border border-gray-800 text-sm hover:bg-gray-900 transition-colors min-w-[140px] justify-between"
+                >
+                  <span className="flex items-center gap-2">
+                     Urutkan: <span className="text-gray-400">{sortOrder}</span>
+                  </span>
+                  <SlidersHorizontal className="w-4 h-4 text-gray-400" />
+                </button>
+
+                {showSortMenu && (
+                  <div className="absolute top-full mt-2 right-0 w-48 bg-[#161618] border border-gray-800 rounded-xl shadow-xl z-20 overflow-hidden">
+                    {[
+                      { label: "Newest", value: "Newest" },
+                      { label: "Oldest", value: "Oldest" },
+                      { label: "Name A-Z", value: "A-Z" },
+                      { label: "Name Z-A", value: "Z-A" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setSortOrder(opt.value);
+                          setShowSortMenu(false);
+                        }}
+                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors flex items-center justify-between
+                          ${sortOrder === opt.value ? "text-yellow-500 bg-gray-800/50" : "text-gray-300"}
+                        `}
+                      >
+                        {opt.label}
+                        {sortOrder === opt.value && <Check className="w-3.5 h-3.5" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                    Member
-                  </th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                    Status
-                  </th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                    Paket
-                  </th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                    Kontak
-                  </th>
-                  <th className="text-center px-5 py-4 text-gray-400 text-xs uppercase">
-                    Ubah
-                  </th>
+                <tr className="border-b border-gray-800 bg-[#161618]/50">
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Member</th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Status</th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Paket</th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Kontak</th>
+                  <th className="text-center px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Ubah</th>
                 </tr>
               </thead>
               <tbody>
                 {PaginatedMembers.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={5}
-                      className="px-5 py-10 text-center text-gray-400"
-                    >
-                      No members found
+                    <td colSpan={5} className="px-5 py-16 text-center text-gray-500">
+                      <div className="flex flex-col items-center gap-2">
+                        <Search className="w-8 h-8 opacity-20" />
+                        <p>No members found matching your criteria</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   PaginatedMembers.map((member) => (
                     <tr
                       key={member.id}
-                      className="border-b border-gray-800/50 hover:bg-gray-900/30"
+                      className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
                     >
                       {/* Name & ID */}
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <img
-                            src={
-                              member.profilePhoto ||
-                              "https://via.placeholder.com/150"
-                            }
+                            src={member.profilePhoto || "https://ui-avatars.com/api/?name=" + member.name + "&background=random"}
                             className="w-10 h-10 rounded-full border border-gray-700 object-cover"
+                            alt={member.name}
                           />
                           <div>
-                            <p className="text-white text-sm">{member.name}</p>
-                            <p className="text-gray-500 text-xs">
+                            <p className="text-white text-sm font-medium">{member.name}</p>
+                            <p className="text-gray-500 text-xs font-mono">
                               #GYM-{member.id.substring(0, 8)}
                             </p>
                           </div>
@@ -297,17 +401,13 @@ export default function Members() {
 
                       {/* Status */}
                       <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs ${getStatusColor(
-                            member.status
-                          )}`}
-                        >
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(member.status)}`}>
                           <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
                           {member.status}
                         </span>
                       </td>
 
-                      {/* Plan Type (UPDATED) */}
+                      {/* Plan Type */}
                       <td className="px-5 py-4">
                         <p className="text-white text-sm">
                           {member.plans?.name || "Unknown"}
@@ -316,14 +416,14 @@ export default function Members() {
 
                       {/* Contact */}
                       <td className="px-5 py-4">
-                        <div className="space-y-1.5">
+                        <div className="space-y-1">
                           <div className="flex items-center gap-2 text-xs">
                             <Mail className="w-3.5 h-3.5 text-gray-500" />
-                            <span className="text-white">{member.email}</span>
+                            <span className="text-gray-300">{member.email}</span>
                           </div>
                           <div className="flex items-center gap-2 text-xs">
                             <Phone className="w-3.5 h-3.5 text-gray-500" />
-                            <span className="text-white">{member.phone}</span>
+                            <span className="text-gray-300">{member.phone}</span>
                           </div>
                         </div>
                       </td>
@@ -333,9 +433,9 @@ export default function Members() {
                         <div className="flex justify-center gap-2">
                           <button
                             title="QR Code"
-                            className="p-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition"
+                            className="p-2 bg-gray-800 text-gray-400 rounded-lg hover:bg-gray-700 hover:text-white transition-colors"
                             onClick={() => {
-                              setQrValue(member.id);
+                              setQrMember(member);
                               setQrOpen(true);
                             }}
                           >
@@ -343,14 +443,14 @@ export default function Members() {
                           </button>
                           <button
                             title="Renew"
-                            className="p-2 bg-yellow-500/10 text-yellow-500 rounded-lg hover:bg-yellow-500 hover:text-black transition"
+                            className="p-2 bg-yellow-500/10 text-yellow-500 rounded-lg hover:bg-yellow-500 hover:text-black transition-colors"
                             onClick={() => openRenewalModal(member)}
                           >
                             <RotateCw className="w-4 h-4" />
                           </button>
                           <button
                             title="Edit"
-                            className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition"
+                            className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-colors"
                             onClick={() => openEditModal(member)}
                           >
                             <Pencil className="w-4 h-4" />
@@ -364,17 +464,17 @@ export default function Members() {
             </table>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between px-5 py-4 border-t border-gray-800">
+            <div className="flex items-center justify-between px-5 py-4 border-t border-gray-800 bg-[#161618]/30">
               <p className="text-sm text-gray-500">
-                Showing {(currentPage - 1) * PaginationMember + 1}–
-                {Math.min(currentPage * PaginationMember, members.length)} of{" "}
-                {members.length} members
+                 Showing {processedMembers.length === 0 ? 0 : (currentPage - 1) * PaginationMember + 1}–
+                {Math.min(currentPage * PaginationMember, processedMembers.length)} of{" "}
+                {processedMembers.length} members
               </p>
               <div className="flex items-center gap-2">
                 <button
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage((p) => p - 1)}
-                  className="px-3 py-1.5 rounded-lg text-sm border border-gray-800 text-gray-400 disabled:opacity-40"
+                  className="px-3 py-1.5 rounded-lg text-sm border border-gray-800 text-gray-400 hover:bg-gray-800 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                 >
                   ‹
                 </button>
@@ -382,19 +482,19 @@ export default function Members() {
                   <button
                     key={i}
                     onClick={() => setCurrentPage(i + 1)}
-                    className={`px-3 py-1.5 rounded-lg text-sm ${
+                    className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                       currentPage === i + 1
-                        ? "bg-yellow-500 text-black"
-                        : "border border-gray-800 text-gray-400"
+                        ? "bg-yellow-500 text-black font-semibold shadow-lg shadow-yellow-500/20"
+                        : "border border-gray-800 text-gray-400 hover:bg-gray-800"
                     }`}
                   >
                     {i + 1}
                   </button>
                 ))}
                 <button
-                  disabled={currentPage === totalPages}
+                  disabled={currentPage === totalPages || totalPages === 0}
                   onClick={() => setCurrentPage((p) => p + 1)}
-                  className="px-3 py-1.5 rounded-lg text-sm border border-gray-800 text-gray-400 disabled:opacity-40"
+                  className="px-3 py-1.5 rounded-lg text-sm border border-gray-800 text-gray-400 hover:bg-gray-800 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
                 >
                   ›
                 </button>
@@ -409,7 +509,7 @@ export default function Members() {
         isVisible={isRenewalVisible}
         onClose={closeRenewalModal}
         onSubmit={handleRenewalSubmit}
-        isLoading={createMemberMutation.isPending}
+        isLoading={updateMemberMutation.isPending}
         member={renewalMember}
       />
 
@@ -429,7 +529,11 @@ export default function Members() {
         isLoading={updateMemberMutation.isPending}
       />
 
-      <QRModal open={qrOpen} value={qrValue} onClose={() => setQrOpen(false)} />
+      <QRModal 
+        open={qrOpen} 
+        member={qrMember} 
+        onClose={() => setQrOpen(false)} 
+      />
     </div>
   );
 }

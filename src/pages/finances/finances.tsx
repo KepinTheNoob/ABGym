@@ -15,7 +15,6 @@ import { API } from "../../service/api";
 import toast, { Toaster } from "react-hot-toast";
 import AddExpenseModal from "./addExpenseModal";
 
-// --- Types ---
 type TransactionType = "Income" | "Expense";
 type PaymentMethod = "Cash" | "CreditCard" | "Transfer";
 
@@ -42,7 +41,7 @@ const COLORS = [
   { hex: "#22c55e", tw: "bg-green-500" },  // Green
   { hex: "#a855f7", tw: "bg-purple-500" }, // Purple
   { hex: "#3b82f6", tw: "bg-blue-500" },   // Blue
-  { hex: "#ef4444", tw: "bg-red-500" },    // Red (fallback)
+  { hex: "#ef4444", tw: "bg-red-500" },    // Red
 ];
 
 export default function Finances() {
@@ -210,7 +209,7 @@ export default function Finances() {
             </div>
             <div className="flex items-baseline mb-2">
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
-                ${stats.revenue.toLocaleString()}
+                Rp{stats.revenue.toLocaleString()}
               </span>
               <span className="text-green-500 font-medium text-sm">+2%</span>
             </div>
@@ -227,7 +226,7 @@ export default function Finances() {
             </div>
             <div className="flex items-baseline mb-2">
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
-                ${stats.expenses.toLocaleString()}
+                Rp{stats.expenses.toLocaleString()}
               </span>
               <span className="text-red-500 font-medium text-sm">-18%</span>
             </div>
@@ -244,7 +243,7 @@ export default function Finances() {
             </div>
             <div className="flex items-baseline mb-2">
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
-                ${stats.netProfit.toLocaleString()}
+                Rp{stats.netProfit.toLocaleString()}
               </span>
               <span className={`font-medium text-sm ${stats.netProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                 {stats.netProfit >= 0 ? '+1%' : '-1%'}
@@ -290,7 +289,7 @@ export default function Finances() {
                 <div className="text-center z-10">
                   <p className="text-sm text-gray-400">Total</p>
                   <p className="text-2xl font-bold">
-                    ${stats.revenue.toLocaleString()}
+                    Rp{stats.revenue.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -313,7 +312,7 @@ export default function Finances() {
                       </span>
                     </div>
                     <span className="font-medium">
-                      ${item.value.toLocaleString()}
+                      Rp{item.value.toLocaleString()}
                     </span>
                   </div>
                 ))
@@ -383,7 +382,7 @@ export default function Finances() {
                         </span>
                       </td>
                       <td className={`px-6 py-4 text-right font-medium text-sm ${txn.type === "Income" ? "text-green-500" : "text-red-500"}`}>
-                        {txn.type === "Income" ? "+" : "-"}${Number(txn.amount).toFixed(2)}
+                        {txn.type === "Income" ? "+" : "-"}Rp{Number(txn.amount).toFixed(2)}
                       </td>
                     </tr>
                   )))}
@@ -415,7 +414,7 @@ export default function Finances() {
                   <p className="text-xs text-gray-500">#{txn.id.substring(0, 8)}</p>
                 </div>
                 <span className={`text-sm font-semibold ${txn.type === "Income" ? "text-green-500" : "text-red-500"}`}>
-                  {txn.type === "Income" ? "+" : "-"}${Number(txn.amount).toFixed(2)}
+                  {txn.type === "Income" ? "+" : "-"}Rp{Number(txn.amount).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between text-xs text-gray-400">
