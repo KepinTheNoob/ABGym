@@ -1,0 +1,118 @@
+import { UserPlus, Search, DollarSign, AlertCircle, Clock } from 'lucide-react';
+import { useState } from 'react';
+
+interface ExpiringMembersWidgetProps {
+  onNavigate: (page: 'dashboard' | 'members' | 'finances' | 'classes' | 'settings') => void;
+}
+
+export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps) {
+  const [selectedDays, setSelectedDays] = useState<7 | 14 >(7);
+
+  const expiringMembers = {
+    7: [
+      { id: 'M-2341', name: 'Sarah Chen', type: 'Gold', expiresIn: '3 days', avatar: 'SC' },
+      { id: 'M-2156', name: 'Michael Rodriguez', type: 'Silver', expiresIn: '5 days', avatar: 'MR' },
+      { id: 'M-1987', name: 'Emily Watson', type: 'Gold', expiresIn: '6 days', avatar: 'EW' },
+    ],
+    14: [
+      { id: 'M-2341', name: 'Sarah Chen', type: 'Gold', expiresIn: '3 days', avatar: 'SC' },
+      { id: 'M-2156', name: 'Michael Rodriguez', type: 'Silver', expiresIn: '5 days', avatar: 'MR' },
+      { id: 'M-1987', name: 'Emily Watson', type: 'Gold', expiresIn: '6 days', avatar: 'EW' },
+    ],
+  };
+
+  const handleSearchMember = () => {
+    onNavigate('members');
+  };
+
+  return (
+  <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-4 sm:p-5 md:p-6 h-full flex flex-col">
+      {/* Quick Actions */}
+      <div className="mb-6">
+        <h3 className="text-white mb-3 text-sm">Quick Action Widget</h3>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <button 
+            className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white p-2 sm:p-2.5 md:p-3 rounded-lg transition-colors"
+
+            title={('dashboard.addNewMember')}
+          >
+            <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
+          </button>
+          <button 
+            onClick={handleSearchMember}
+            className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white p-2 sm:p-2.5 md:p-3 rounded-lg transition-colors"
+
+            title={('dashboard.searchMember')}
+          >
+            <Search className="w-4 h-4 text-yellow-500" />
+          </button>
+          <button 
+            className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white p-2 sm:p-2.5 md:p-3 rounded-lg transition-colors"
+
+            title={('dashboard.recordPayment')}
+          >
+            <DollarSign className="w-4 h-4 text-yellow-500" />
+          </button>
+        </div>
+      </div>
+
+      {/* Expiring Memberships */}
+      <div className="border-t border-gray-800 pt-5">
+        <div className="flex items-center gap-2 mb-3">
+          <AlertCircle className="w-4 h-4 text-yellow-500" />
+          <h3 className="text-white text-sm">Expiring Membership</h3>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <button
+            onClick={() => setSelectedDays(7)}
+            className={`flex-1 px-2 py-1.5 rounded-lg text-xs transition-colors ${
+              selectedDays === 7
+                ? 'bg-yellow-500 text-black'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+            }`}
+          >
+            3D
+          </button>
+          <button
+            onClick={() => setSelectedDays(14)}
+            className={`flex-1 px-2 py-1.5 rounded-lg text-xs transition-colors ${
+              selectedDays === 14
+                ? 'bg-yellow-500 text-black'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+            }`}
+          >
+          7D
+          </button>
+        </div>
+
+        {/* Members List */}
+        <div className="space-y-2 max-h-[160px] sm:max-h-[220px] md:max-h-[260px] overflow-y-auto">
+          {expiringMembers[selectedDays].map((member) => (
+            <div
+              key={member.id}
+              className="flex items-center justify-between bg-gray-800/50 p-2.5 rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-yellow-500 text-xs">{member.avatar}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-xs truncate">{member.name}</p>
+                  <p className="text-gray-400 text-xs">{member.type}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1 text-yellow-500 justify-end sm:justify-start">
+                  <Clock className="w-3 h-3" />
+                  <span className="text-xs whitespace-nowrap">{member.expiresIn}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

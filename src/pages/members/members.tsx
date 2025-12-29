@@ -241,23 +241,23 @@ export default function Members() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {/* ... Stats cards (Same as before) ... */}
            <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-             <p className="text-gray-400 text-sm md:text-base pb-4">Habis dalam 3 hari</p>
+             <p className="text-gray-400 text-sm md:text-xl font-bold pb-4">Habis dalam 3 hari</p>
              <div className="flex items-end gap-2">
                <h3 className="text-2xl md:text-3xl font-bold">{akanHabisCount}</h3>
              </div>
              <p className="text-gray-400 text-xs md:text-sm pt-2">Perlu Perpanjangan Segera</p>
            </div>
            <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-             <p className="text-gray-400 text-sm md:text-base pb-4">Habis dalam 7 hari</p>
+             <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">Habis dalam 7 hari</p>
              <div className="flex items-end gap-2">
                <h3 className="text-yellow-400 text-2xl md:text-3xl font-bold">{aktifCount}</h3>
              </div>
              <p className="text-gray-400 text-xs md:text-sm pt-2">Periode perpanjangan</p>
            </div>
            <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-             <p className="text-gray-400 text-sm md:text-base pb-4">Member Kedaluwarsa</p>
+             <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">Member Kadaluwarsa</p>
              <div className="flex items-end gap-2">
-               <h3 className="text-red-600 text-2xl md:text-3xl font-bold">{tidakAktifCount}</h3>
+               <h3 className=" text-2xl text-red-600 md:text-3xl font-bold">{tidakAktifCount}</h3>
              </div>
              <p className="text-gray-400 text-xs md:text-sm pt-2">Perlu Tindakan Segera</p>
            </div>

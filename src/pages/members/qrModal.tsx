@@ -75,40 +75,62 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
 
   if (!open || !member) return null;
 
-  return (
+return (
+  <div
+    className={`
+      fixed inset-0 z-50 flex items-center justify-center
+      bg-black/70 transition-opacity duration-300 p-4
+      ${isVisible ? "opacity-100" : "opacity-0 pointer-events-none"}
+    `}
+  >
     <div
-      className={`
-    fixed inset-0 z-50 flex items-center justify-center
-    bg-black/70 transition-opacity duration-300 p-4
-    ${isVisible ? "opacity-100" : "opacity-0 pointer-events-none"}
-  `}
+      ref={modalRef}
+      className="
+        relative overflow-hidden
+        rounded-[2rem] shadow-2xl text-center
+        w-full max-w-[360px]
+        aspect-[420/969]
+        p-5 sm:p-6
+        transform transition-all duration-300
+      "
     >
-      <div
-        ref={modalRef}
-        className={`
-          relative overflow-hidden
-          rounded-[2rem] shadow-2xl text-center
-          w-full max-w-[280px] p-5 sm:p-6 
-          transform transition-all duration-300
-          ${
-            isVisible
-              ? "scale-100 opacity-100 translate-y-0"
-              : "scale-95 opacity-0 translate-y-4"
-          }
-        `}
-      >
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${bg})` }}
-        />
-    
-        {/* Dark overlay supaya konten tetap terbaca */}
-        <div className="absolute inset-0 bg-black/60" />
+      <img
+        src={bg}
+        className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+        alt=""
+      />
 
-        {/* Content wrapper */}
-        <div className="relative z-10">
+      {/* Dark overlay supaya konten tetap terbaca */}
+      <div className="absolute inset-0 bg-black/20" />
 
-          
+      {/* Content wrapper */}
+      <div className="relative z-10 h-full flex flex-col items-center">
+
+        {/* Profile Placeholder */}
+        <div className="flex flex-col items-center mb-4">
+          {/* Avatar dengan outline */}
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gray-700/40 flex items-center justify-center text-white text-lg font-bold
+                          border-4 border-yellow-500/80 shadow-[0_0_10px_rgba(234,179,8,0.6)]">
+            {member?.name ? member.name[0] : "?"}
+          </div>
+          {/* Name */}
+          <p className="mt-2 text-white font-semibold text-sm sm:text-base truncate max-w-[200px] text-center">
+            {member?.name || "Member Name"}
+          </p>
+        </div>
+
+        {/* Card */}
+          <div
+            className="
+              absolute left-0 right-0 bottom-0
+              translate-y
+              mx-4 mb-6
+              rounded-2xl bg-black border border-gray-700/60
+              backdrop-blur-md p-4 sm:p-5 shadow-xl
+            "
+          >
+
+
         {/* QR Code Area */}
         <div className="bg-[#F3EFE0] rounded-2xl p-4 sm:p-5 mb-5 sm:mb-6 flex justify-center items-center shadow-inner mx-auto aspect-square w-full max-w-[240px]">
           <QRCodeSVG
@@ -153,24 +175,26 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
             </span>
           </div>
 
-          {/* Row 3: Valid Until */}
-          <div className="flex justify-between pt-3">
-            <span className="text-gray-400/80">Valid Until</span>
-            <span className="text-[#C99C33] font-bold">
-              {formatDate(member.expirationDate)}
-            </span>
+            {/* Row 3: Valid Until */}
+            <div className="flex justify-between pt-3">
+              <span className="text-gray-400/80">Valid Until</span>
+              <span className="text-[#C99C33] font-bold">
+                {formatDate(member.expirationDate)}
+              </span>
+            </div>
           </div>
+          <button
+            onClick={downloadCard}
+            className="w-full mb-5 py-2 mt-6 rounded-xl bg-[#C99C33] text-black font-bold text-sm hover:bg-[#d9a000] transition"
+          >
+            Download QR Card
+          </button>
         </div>
-
-        <button
-        onClick={downloadCard}
-        className="w-full mb-5 py-2 mt-6 rounded-xl bg-[#C99C33] text-black font-bold text-sm hover:bg-[#d9a000] transition"
-      >
-        Download QR Card
-      </button>
-
       </div>
     </div>
   </div>
 );
 }
+
+
+ 

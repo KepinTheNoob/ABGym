@@ -1,6 +1,8 @@
+import { useState } from "react";
 import RevenueChart from "../components/revenueChart";
 import AttendanceChart from "../components/attendanceChart"
 import { RecentActivity } from "../components/recentActivity";
+import { ExpiringMembersWidget } from "../components/ExpiringWidgets"
 
 
 export default function Dashboard() {
@@ -107,29 +109,12 @@ export default function Dashboard() {
           </div>
           
           {/* Membership Status */}
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-6">
-            <p className="font-semibold mb-4">Membership Status</p>
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs sm:text-sm">Active 82%</p>
-                <div className="w-full bg-gray-700 h-2 rounded">
-                  <div className="h-2 bg-yellow-500 rounded w-[82%]" />
-                </div>
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm">Expired 12%</p>
-                <div className="w-full bg-gray-700 h-2 rounded">
-                  <div className="h-2 bg-red-500 rounded w-[12%]" />
-                </div>
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm">Pending 6%</p>
-                <div className="w-full bg-gray-700 h-2 rounded">
-                  <div className="h-2 bg-gray-400 rounded w-[6%]" />
-                </div>
-              </div>
-            </div>
+          <div className="h-full">
+            <ExpiringMembersWidget
+              onNavigate={(page) => console.log(page)}
+            />
           </div>
+
         </div>
       </main>
     </div>

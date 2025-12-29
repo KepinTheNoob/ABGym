@@ -221,7 +221,7 @@ export default function Finances() {
           {/* Card 1: Revenue */}
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-sm font-medium text-gray-400">TOTAL REVENUE</h3>
+              <h3 className="text-sm font-medium text-gray-400">TOTAL PENDAPATAN</h3>
               <div className="bg-green-500/20 p-1.5 rounded-md">
                 <TrendingUp className="w-5 h-5 text-green-500" />
               </div>
@@ -238,7 +238,7 @@ export default function Finances() {
           {/* Card 2: Expenses */}
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-sm font-medium text-gray-400">TOTAL EXPENSES</h3>
+              <h3 className="text-sm font-medium text-gray-400">TOTAL PENGELUARAN</h3>
               <div className="bg-red-500/20 p-1.5 rounded-md">
                 <TrendingDown className="w-5 h-5 text-red-500" />
               </div>
@@ -255,7 +255,7 @@ export default function Finances() {
           {/* Card 3: Net Profit */}
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-sm font-medium text-gray-400">NET PROFIT</h3>
+              <h3 className="text-sm font-medium text-gray-400">PROFIT BERSIH</h3>
               <div className="bg-yellow-500/20 p-1.5 rounded-md">
                 <DollarSign className="w-5 h-5 text-yellow-500" />
               </div>
@@ -295,8 +295,8 @@ export default function Finances() {
               <p className="text-sm text-gray-400">Current Month Distribution</p>
             </div>
             <div className="flex justify-center items-center h-64 relative">
-              <div className="w-48 h-48 rounded-full border-8 border-gray-700 relative flex items-center justify-center">
-                {/* Dynamic Gradient applied here */}
+              <div className="w-64 h-64 rounded-full border-8 border-gray-600 relative flex items-center justify-center">
+                {/* Dynamic Gradient */}
                 <div
                   className="absolute inset-0 rounded-full"
                   style={{
@@ -306,8 +306,8 @@ export default function Finances() {
                   }}
                 ></div>
                 <div className="text-center z-10">
-                  <p className="text-sm text-gray-400">Total</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-base font-semibold text-gray-400">Total</p>
+                  <p className="text-2xl font-semibold">
                     Rp{stats.revenue.toLocaleString()}
                   </p>
                 </div>
