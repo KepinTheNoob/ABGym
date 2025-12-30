@@ -83,7 +83,6 @@ export default function Members() {
       setRenewalMember(null);
     }, 300);
   };
-
   const openAddModal = () => {
     setIsAddOpen(true);
     setTimeout(() => setIsAddVisible(true), 10);
