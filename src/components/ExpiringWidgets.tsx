@@ -4,6 +4,8 @@ import AddMembersModal from '../pages/members/addMembersModal';
 import AddExpenseModal from '../pages/finances/addExpenseModal';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { API } from '../service/api';
+import { useQuery } from "@tanstack/react-query";
+import { Member } from "../types/types";
 
 interface ExpiringMembersWidgetProps {
   onNavigate: (page: 'dashboard' | 'members' | 'finances' | 'classes' | 'settings') => void;
@@ -43,6 +45,23 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
     },
   });
 
+  const { data: members = [] } = useQuery<Member[]>({
+    queryKey: ["members"],
+    queryFn: async () => {
+      const res = await API.get("/members");
+      return res.data;
+    },
+  });
+
+  function getRemainingDays(expirationDate: string) {
+    const today = new Date();
+    const exp = new Date(expirationDate);
+    const diff = exp.getTime() - today.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }
+
+
+
   // --- Modal Handlers ---
   const openAddMemberModal = () => {
     setIsAddMemberOpen(true);
@@ -73,59 +92,71 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
     createTransactionMutation.mutate(data);
   };
 
-  const expiringMembers = {
-    7: [
-      { id: 'M-2341', name: 'Sarah Chen', type: 'Gold', expiresIn: '3 days', avatar: 'SC' },
-      { id: 'M-2156', name: 'Michael Rodriguez', type: 'Silver', expiresIn: '5 days', avatar: 'MR' },
-      { id: 'M-1987', name: 'Emily Watson', type: 'Gold', expiresIn: '6 days', avatar: 'EW' },
-    ],
-    14: [
-      { id: 'M-2341', name: 'Sarah Chen', type: 'Gold', expiresIn: '3 days', avatar: 'SC' },
-      { id: 'M-2156', name: 'Michael Rodriguez', type: 'Silver', expiresIn: '5 days', avatar: 'MR' },
-      { id: 'M-1987', name: 'Emily Watson', type: 'Gold', expiresIn: '6 days', avatar: 'EW' },
-    ],
-  };
+  const expiringMembers = members
+    .map(m => {
+      const daysLeft = getRemainingDays(m.expirationDate);
 
-  const handleSearchMember = () => onNavigate('members');
+      return {
+        ...m,
+        daysLeft,
+      };
+    })
+    .filter(m => m.status === "Expiring")   // ← pakai status backend
+    .filter(m => {
+      if (selectedDays === 7) {
+        // 3D tab → 0–3 hari
+        return m.daysLeft >= 0 && m.daysLeft <= 3;
+      }
+      // 7D tab → 4–7 hari
+      return m.daysLeft >= 4 && m.daysLeft <= 7;
+    })
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .slice(0, 6);
+
+
+
+
+
 
   return (
     <>
       <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-4 sm:p-5 md:p-6 h-full flex flex-col">
-      {/* Quick Actions */}
-      <div className="mb-6">
-        <h3 className="text-white mb-3 text-sm">Quick Action Widget</h3>
-        <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-3">
-          {/* Add Member */}
-          <button 
-            className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white 
-                      p-2 sm:p-2.5 md:p-3 rounded-lg transition-colors"
-            onClick={openAddMemberModal}
-            title="Add New Member"
-          >
-            <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-yellow-500" />
-          </button>
+        {/* Quick Actions */}
+        <div className="mb-6">
+          <h3 className="text-white mb-3 text-sm">Quick Action Widget</h3>
 
-          {/* Search Member */}
-          <button 
-            onClick={handleSearchMember}
-            className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white 
-                      p-2 sm:p-2.5 md:p-3 rounded-lg transition-colors"
-            title="Search Member"
-          >
-            <Search className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-yellow-500" />
-          </button>
+          {/* Wrapper jadi 2 kolom full width */}
+          <div className="grid grid-cols-2 gap-3 w-full">
+            
+            {/* Add Member */}
+            <button
+              onClick={openAddMemberModal}
+              title="Add New Member"
+              className="flex items-center justify-center
+                        w-full
+                        bg-gray-800 hover:bg-gray-700
+                        p-2 sm:p-2.5 md:p-3
+                        rounded-lg transition-colors"
+            >
+              <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-yellow-500" />
+            </button>
 
-          {/* Record Payment */}
-          <button 
-            onClick={openAddExpenseModal}
-            className="flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white 
-                      p-2 sm:p-2.5 md:p-3 rounded-lg transition-colors"
-            title="Record Payment"
-          >
-            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-yellow-500" />
-          </button>
+            {/* Record Payment */}
+            <button
+              onClick={openAddExpenseModal}
+              title="Record Payment"
+              className="flex items-center justify-center
+                        w-full
+                        bg-gray-800 hover:bg-gray-700
+                        p-2 sm:p-2.5 md:p-3
+                        rounded-lg transition-colors"
+            >
+              <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-yellow-500" />
+            </button>
+
+          </div>
         </div>
-      </div>
+
 
       {/* Expiring Memberships */}
       <div className="border-t border-gray-800 pt-5 flex-1 flex flex-col">
@@ -155,30 +186,42 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
         </div>
 
         {/* Members List */}
-        <div className="space-y-2 overflow-y-auto flex-1">
-          {expiringMembers[selectedDays].map((member) => (
+        <div
+          className="
+            space-y-2
+            overflow-y-auto
+            flex-1
+            pr-1
+            max-h-[170px]
+          "
+        >
+          {expiringMembers.map((member) => (
             <div
               key={member.id}
               className="flex items-center justify-between bg-gray-800/50 p-2.5 rounded-lg hover:bg-gray-800 transition-colors"
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-yellow-500 text-xs">{member.avatar}</span>
+                  <img
+                    src={member.profilePhoto || `https://ui-avatars.com/api/?name=${member.name}`}
+                    className="w-8 h-8 rounded-full"
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-white text-xs truncate">{member.name}</p>
-                  <p className="text-gray-400 text-xs">{member.type}</p>
+                  <p className="text-gray-400 text-xs">{member.plans.name}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <div className="flex items-center gap-1 text-yellow-500 justify-end sm:justify-start">
+                <div className="flex items-center gap-1 text-yellow-500">
                   <Clock className="w-3 h-3" />
-                  <span className="text-xs whitespace-nowrap">{member.expiresIn}</span>
+                  <span className="text-xs whitespace-nowrap">{member.daysLeft}</span>
                 </div>
               </div>
             </div>
           ))}
         </div>
+
       </div>
     </div>
 
