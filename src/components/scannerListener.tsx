@@ -12,6 +12,7 @@ export default function ScannerListener() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const bufferRef = useRef<string>("");
+  const lastKeyTimeRef = useRef<number>(0);
 
   useEffect(() => {
     let reconnectTimer: ReturnType<typeof setTimeout>;
@@ -68,16 +69,35 @@ export default function ScannerListener() {
 
       if (result) return;
 
+      const now = Date.now();
+      const delta = now - lastKeyTimeRef.current;
+      lastKeyTimeRef.current = now;
+
+      if (delta > 300) {
+        bufferRef.current = "";
+      }
+
       if (e.key === "Enter") {
+        const value = bufferRef.current.trim();
+
+        if (!value) {
+          bufferRef.current = "";
+          return;
+        }
+
         if (
-          bufferRef.current.length > 0 &&
+          bufferRef.current.length >= 8 &&
           wsRef.current?.readyState === WebSocket.OPEN
         ) {
           console.log("📤 Sending scan:", bufferRef.current);
           wsRef.current.send(bufferRef.current);
-          bufferRef.current = "";
         }
-      } else {
+
+        bufferRef.current = "";
+        return;
+      }
+
+      if (e.key.length === 1) {
         bufferRef.current += e.key;
       }
     };
