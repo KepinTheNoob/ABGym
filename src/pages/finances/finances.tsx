@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Pencil,
   Trash2,
 } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -16,6 +15,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API } from "../../service/api";
 import toast, { Toaster } from "react-hot-toast";
 import AddExpenseModal from "./addExpenseModal";
+import RevenueExpenseChart from "./revenueExpenseChart";
 
 type TransactionType = "Income" | "Expense";
 type PaymentMethod = "Cash" | "CreditCard" | "Transfer";
@@ -32,7 +32,7 @@ interface Transaction {
   categoryId?: number | null;
   description: string;
   type: TransactionType;
-  amount: string; 
+  amount: string;
   paymentMethod: PaymentMethod;
   transactionDate: string;
   category?: Category;
@@ -40,15 +40,15 @@ interface Transaction {
 
 const COLORS = [
   { hex: "#eab308", tw: "bg-yellow-500" }, // Yellow
-  { hex: "#22c55e", tw: "bg-green-500" },  // Green
+  { hex: "#22c55e", tw: "bg-green-500" }, // Green
   { hex: "#a855f7", tw: "bg-purple-500" }, // Purple
-  { hex: "#3b82f6", tw: "bg-blue-500" },   // Blue
-  { hex: "#ef4444", tw: "bg-red-500" },    // Red
+  { hex: "#3b82f6", tw: "bg-blue-500" }, // Blue
+  { hex: "#ef4444", tw: "bg-red-500" }, // Red
 ];
 
 export default function Finances() {
   const queryClient = useQueryClient();
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -65,7 +65,6 @@ export default function Finances() {
       toast.success("Transaction deleted");
     },
   });
-
 
   const handleDelete = (id: string) => {
     if (confirm("Delete this transaction?")) {
@@ -112,26 +111,68 @@ export default function Finances() {
   };
 
   const stats = useMemo(() => {
-    let revenue = 0;
-    let expenses = 0;
+    // 1. Determine Current Month & Previous Month
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0-11
+    const currentYear = now.getFullYear();
 
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+    // Helper to safely parse dates (handling " " vs "T")
+    const parseDate = (dateStr: string) => new Date(dateStr.replace(" ", "T"));
+
+    // 2. Initialize Buckets
+    let currentRevenue = 0;
+    let currentExpenses = 0;
+    let prevRevenue = 0;
+    let prevExpenses = 0;
+
+    // 3. Loop through transactions once
     transactions.forEach((t) => {
+      const tDate = parseDate(t.transactionDate);
+      const tMonth = tDate.getMonth();
+      const tYear = tDate.getFullYear();
       const amount = Number(t.amount);
-      if (t.type === "Income") revenue += amount;
-      else expenses += amount;
+
+      // Check for Current Month
+      if (tMonth === currentMonth && tYear === currentYear) {
+        if (t.type === "Income") currentRevenue += amount;
+        else currentExpenses += amount;
+      }
+      // Check for Previous Month
+      else if (tMonth === prevMonth && tYear === prevYear) {
+        if (t.type === "Income") prevRevenue += amount;
+        else prevExpenses += amount;
+      }
     });
 
+    const currentProfit = currentRevenue - currentExpenses;
+    const prevProfit = prevRevenue - prevExpenses;
+
+    // 4. Calculate Percentage Changes
+    const calculateChange = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0; // Avoid divide by zero
+      return ((current - previous) / previous) * 100;
+    };
+
     return {
-      revenue,
-      expenses,
-      netProfit: revenue - expenses,
+      revenue: currentRevenue,
+      revenueChange: calculateChange(currentRevenue, prevRevenue),
+      
+      expenses: currentExpenses,
+      expensesChange: calculateChange(currentExpenses, prevExpenses),
+      
+      netProfit: currentProfit,
+      netProfitChange: calculateChange(currentProfit, prevProfit),
     };
   }, [transactions]);
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) =>
-      t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.id.toLowerCase().includes(searchTerm.toLowerCase())
+    return transactions.filter(
+      (t) =>
+        t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [transactions, searchTerm]);
 
@@ -180,7 +221,7 @@ export default function Finances() {
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
       <Toaster position="top-right" />
-      
+
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         {/* --- Header --- */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -198,7 +239,7 @@ export default function Finances() {
               Export Report
             </button>
 
-            <button 
+            <button
               onClick={openAddModal}
               className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold rounded-xl transition-colors"
             >
@@ -222,7 +263,9 @@ export default function Finances() {
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
                 Rp{stats.revenue.toLocaleString()}
               </span>
-              <span className="text-green-500 font-medium text-sm">+2%</span>
+              <span className={`font-medium text-sm ${stats.revenueChange >= 0 ? "text-green-500" : "text-red-500"}`}>
+                {stats.revenueChange >= 0 ? "+" : ""}{stats.revenueChange.toFixed(1)}%
+              </span>
             </div>
             <p className="text-sm text-gray-400">vs. last month</p>
           </div>
@@ -239,7 +282,10 @@ export default function Finances() {
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
                 Rp{stats.expenses.toLocaleString()}
               </span>
-              <span className="text-red-500 font-medium text-sm">-18%</span>
+              {/* For expenses, positive change (increase) is usually bad (red), negative (decrease) is good (green) */}
+              <span className={`font-medium text-sm ${stats.expensesChange <= 0 ? "text-green-500" : "text-red-500"}`}>
+                {stats.expensesChange >= 0 ? "+" : ""}{stats.expensesChange.toFixed(1)}%
+              </span>
             </div>
             <p className="text-sm text-gray-400">vs. last month</p>
           </div>
@@ -256,8 +302,8 @@ export default function Finances() {
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
                 Rp{stats.netProfit.toLocaleString()}
               </span>
-              <span className={`font-medium text-sm ${stats.netProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {stats.netProfit >= 0 ? '+1%' : '-1%'}
+              <span className={`font-medium text-sm ${stats.netProfitChange >= 0 ? "text-green-500" : "text-red-500"}`}>
+                {stats.netProfitChange >= 0 ? "+" : ""}{stats.netProfitChange.toFixed(1)}%
               </span>
             </div>
             <p className="text-sm text-gray-400">vs. last month</p>
@@ -274,8 +320,8 @@ export default function Finances() {
               </div>
             </div>
             <div className="h-56 sm:h-64 md:h-72 relative w-full">
-              <div className="absolute inset-0 flex items-center justify-center text-gray-600 border border-gray-800/50 rounded bg-[#0a0a0a]/50">
-                Chart Visualization Placeholder
+              <div className="flex-1 w-full min-h-[300px] h-full">
+                <RevenueExpenseChart transactions={transactions} />
               </div>
             </div>
           </div>
@@ -284,7 +330,9 @@ export default function Finances() {
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="mb-6">
               <h3 className="text-lg font-bold mb-1">Revenue by Type</h3>
-              <p className="text-sm text-gray-400">Current Month Distribution</p>
+              <p className="text-sm text-gray-400">
+                Current Month Distribution
+              </p>
             </div>
             <div className="flex justify-center items-center h-64 relative">
               <div className="w-64 h-64 rounded-full border-8 border-gray-600 relative flex items-center justify-center">
@@ -305,7 +353,7 @@ export default function Finances() {
                 </div>
               </div>
             </div>
-            
+
             {/* Dynamic Legend */}
             <div className="mt-6 space-y-3">
               {categoryData.length > 0 ? (
@@ -342,7 +390,9 @@ export default function Finances() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <div>
                 <h3 className="text-lg font-bold mb-1">Recent Transactions</h3>
-                <p className="text-sm text-gray-400">Latest financial activities</p>
+                <p className="text-sm text-gray-400">
+                  Latest financial activities
+                </p>
               </div>
             </div>
 
@@ -367,66 +417,147 @@ export default function Finances() {
               <table className="w-full text-left whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-gray-800">
-                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Description</th>
-                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Category</th>
-                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Date</th>
-                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Type</th>
-                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Amount</th>
-                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">Action</th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+                      Description
+                    </th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+                      Category
+                    </th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+                      Date
+                    </th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+                      Type
+                    </th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+                      Amount
+                    </th>
+                    <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
                   {paginatedTransactions.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No transactions found.</td></tr>
-                  ) : (
-                    paginatedTransactions.map((txn) => (
-                    <tr key={txn.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="text-white text-sm">{txn.description}</p>
-                        <p className="text-xs text-gray-500">#{txn.id.substring(0, 8)}</p>
-                      </td>
-                      <td className="px-6 py-4 text-gray-400 text-sm">{txn.category?.name || "General"}</td>
-                      <td className="px-6 py-4 text-gray-400 text-sm">{new Date(txn.transactionDate).toLocaleDateString()}</td>
-                      <td className="px-6 py-4">
-                        <span className={`flex items-center text-sm ${txn.type === "Income" ? "text-green-500" : "text-red-500"}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full mr-2 ${txn.type === "Income" ? "bg-green-500" : "bg-red-500"}`}></span>
-                          {txn.type}
-                        </span>
-                      </td>
-                      <td className={`px-6 py-4 text-left font-medium text-sm ${txn.type === "Income" ? "text-green-500" : "text-red-500"}`}>
-                        {txn.type === "Income" ? "+" : "-"}Rp {Number(txn.amount).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleDelete(txn.id)}
-                            disabled={deleteMutation.isPending}
-                            className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition disabled:opacity-50"
-                          >
-                            {deleteMutation.isPending &&
-                            deleteMutation.variables === txn.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-6 py-8 text-center text-gray-500"
+                      >
+                        No transactions found.
                       </td>
                     </tr>
-                  )))}
+                  ) : (
+                    paginatedTransactions.map((txn) => (
+                      <tr
+                        key={txn.id}
+                        className="hover:bg-white/5 transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <p className="text-white text-sm">
+                            {txn.description}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            #{txn.id.substring(0, 8)}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4 text-gray-400 text-sm">
+                          {txn.category?.name || "General"}
+                        </td>
+                        <td className="px-6 py-4 text-gray-400 text-sm">
+                          {new Date(txn.transactionDate).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`flex items-center text-sm ${
+                              txn.type === "Income"
+                                ? "text-green-500"
+                                : "text-red-500"
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full mr-2 ${
+                                txn.type === "Income"
+                                  ? "bg-green-500"
+                                  : "bg-red-500"
+                              }`}
+                            ></span>
+                            {txn.type}
+                          </span>
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-left font-medium text-sm ${
+                            txn.type === "Income"
+                              ? "text-green-500"
+                              : "text-red-500"
+                          }`}
+                        >
+                          {txn.type === "Income" ? "+" : "-"}Rp{" "}
+                          {Number(txn.amount).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDelete(txn.id)}
+                              disabled={deleteMutation.isPending}
+                              className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition disabled:opacity-50"
+                            >
+                              {deleteMutation.isPending &&
+                              deleteMutation.variables === txn.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
 
             {/* Pagination Controls */}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 text-sm text-gray-400">
-              <p className="mb-4 md:mb-0">Showing {(currentPage - 1) * itemsPerPage + 1}–{Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length} transactions</p>
+              <p className="mb-4 md:mb-0">
+                Showing {(currentPage - 1) * itemsPerPage + 1}–
+                {Math.min(
+                  currentPage * itemsPerPage,
+                  filteredTransactions.length
+                )}{" "}
+                of {filteredTransactions.length} transactions
+              </p>
               <div className="flex items-center space-x-2">
-                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-2 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"><ChevronLeft className="w-4 h-4" /></button>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
                 {Array.from({ length: totalPages }).map((_, i) => (
-                    <button key={i} onClick={() => setCurrentPage(i + 1)} className={`px-3 py-1 rounded-lg font-medium ${currentPage === i + 1 ? 'bg-yellow-500 text-gray-900' : 'hover:bg-gray-800 transition-colors'}`}>{i + 1}</button>
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`px-3 py-1 rounded-lg font-medium ${
+                      currentPage === i + 1
+                        ? "bg-yellow-500 text-gray-900"
+                        : "hover:bg-gray-800 transition-colors"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
                 ))}
-                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-2 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"><ChevronRight className="w-4 h-4" /></button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -435,19 +566,31 @@ export default function Finances() {
         {/* --- Mobile List --- */}
         <div className="md:hidden space-y-4">
           {paginatedTransactions.map((txn) => (
-            <div key={txn.id} className="bg-[#1A1A1A] border border-gray-800 rounded-lg p-4">
+            <div
+              key={txn.id}
+              className="bg-[#1A1A1A] border border-gray-800 rounded-lg p-4"
+            >
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <p className="font-medium text-gray-200">{txn.description}</p>
-                  <p className="text-xs text-gray-500">#{txn.id.substring(0, 8)}</p>
+                  <p className="text-xs text-gray-500">
+                    #{txn.id.substring(0, 8)}
+                  </p>
                 </div>
-                <span className={`text-sm font-semibold ${txn.type === "Income" ? "text-green-500" : "text-red-500"}`}>
-                  {txn.type === "Income" ? "+" : "-"}Rp{Number(txn.amount).toFixed(2)}
+                <span
+                  className={`text-sm font-semibold ${
+                    txn.type === "Income" ? "text-green-500" : "text-red-500"
+                  }`}
+                >
+                  {txn.type === "Income" ? "+" : "-"}Rp
+                  {Number(txn.amount).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between text-xs text-gray-400">
                 <span>{txn.category?.name || "General"}</span>
-                <span>{new Date(txn.transactionDate).toLocaleDateString()}</span>
+                <span>
+                  {new Date(txn.transactionDate).toLocaleDateString()}
+                </span>
               </div>
             </div>
           ))}

@@ -80,9 +80,9 @@ export function RecentActivity() {
                 <p className="text-yellow-500 text-xs sm:text-sm truncate font-medium">
                   {log.member?.name || "Unknown Member"}
                 </p>
-                <p className="text-gray-400 text-xs truncate">
+                {/* <p className="text-gray-400 text-xs truncate">
                   Checked-in at Main Entrance
-                </p>
+                </p> */}
               </div>
 
               <span className="text-gray-500 text-[10px] sm:text-xs whitespace-nowrap flex-shrink-0 font-mono">
