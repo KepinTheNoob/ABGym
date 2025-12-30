@@ -177,14 +177,6 @@ export default function Finances() {
     return `conic-gradient(${gradientParts.join(", ")})`;
   }, [categoryData]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0c0c0e] flex items-center justify-center text-white">
-        <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
       <Toaster position="top-right" />

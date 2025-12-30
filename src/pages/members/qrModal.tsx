@@ -25,9 +25,9 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
     });
   };
 
-   // Fungsi download menggunakan html2canvas
+  // Fungsi download menggunakan html2canvas
   const downloadCard = async (member: Member) => {
-    if (!cardRef.current) return;
+    if (!cardRef.current || !member) return;
     const canvas = await html2canvas(cardRef.current, {
       backgroundColor: null,
       scale: 2,
@@ -71,33 +71,32 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
 
   if (!open || !member) return null;
 
- return (
-  <div
-    className={`
-      fixed inset-0 z-50 flex flex-col items-center justify-center
+  return (
+    <div
+      className={`
+      fixed inset-0 z-50 flex items-center justify-center
       bg-black/70 transition-opacity duration-300 p-4
       ${isVisible ? "opacity-100" : "opacity-0 pointer-events-none"}
     `}
-  >
-    <div
-      ref={modalRef}
-      className="
-        relative w-full max-w-[360px] flex flex-col items-center
-        p-5 sm:p-6 rounded-[2rem] shadow-2xl
-        transition-all duration-300
-      "
     >
-      {/* Card dengan background */}
       <div
-        ref={cardRef}
-        className="relative w-full rounded-2xl overflow-hidden shadow-xl mb-4"
-        style={{
-          backgroundImage: `url(${bg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+        ref={modalRef}
+        className="
+        relative overflow-hidden
+        rounded-[2rem] shadow-2xl text-center
+        w-full max-w-[360px]
+        aspect-[420/969]
+        p-5 sm:p-6
+        transform transition-all duration-300
+      "
       >
-        {/* Dark overlay */}
+        <img
+          src={bg}
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+          alt=""
+        />
+
+        {/* Dark overlay supaya konten tetap terbaca */}
         <div className="absolute inset-0 bg-black/20" />
 
         {/* Content */}
@@ -133,7 +132,7 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
           <div className="flex items-center justify-center gap-3 mb-6 sm:mb-8 text-[#C99C33] opacity-90">
             <div className="h-px w-4 sm:w-6 bg-[#C99C33]/40"></div>
             <p className="text-[0.65rem] sm:text-[0.7rem] tracking-[0.25em] font-semibold uppercase whitespace-nowrap">
-              AB Fitness 
+              AB Fitness
             </p>
             <div className="h-px w-4 sm:w-6 bg-[#C99C33]/40"></div>
           </div>
@@ -149,12 +148,16 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
 
             <div className="flex justify-between items-center py-3 border-b border-white/10">
               <span className="text-gray-400/80">Member Since</span>
-              <span className="text-white font-semibold">{formatDate(member.joinDate)}</span>
+              <span className="text-white font-semibold">
+                {formatDate(member.joinDate)}
+              </span>
             </div>
 
             <div className="flex justify-between pt-3">
               <span className="text-gray-400/80">Valid Until</span>
-              <span className="text-[#C99C33] font-bold">{formatDate(member.expirationDate)}</span>
+              <span className="text-[#C99C33] font-bold">
+                {formatDate(member.expirationDate)}
+              </span>
             </div>
           </div>
         </div>
@@ -168,6 +171,5 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
         Download QR Card
       </button>
     </div>
-  </div>
-);
+  );
 }

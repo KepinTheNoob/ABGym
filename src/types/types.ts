@@ -20,3 +20,9 @@ export type Member = {
   planId: number;
   plans: Plan;
 };
+
+export type Attendance = {
+  id: string;
+  checkInTime: string;
+  checkOutTime?: string;
+};

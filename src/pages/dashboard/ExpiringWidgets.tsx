@@ -1,11 +1,11 @@
 import { UserPlus, Search, DollarSign, AlertCircle, Clock, Plus } from 'lucide-react';
 import { useState } from 'react';
-import AddMembersModal from '../pages/members/addMembersModal';
-import AddExpenseModal from '../pages/finances/addExpenseModal';
+import AddMembersModal from '../../pages/members/addMembersModal';
+import AddExpenseModal from '../../pages/finances/addExpenseModal';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { API } from '../service/api';
+import { API } from '../../service/api';
 import { useQuery } from "@tanstack/react-query";
-import { Member } from "../types/types";
+import { Member } from "../../types/types";
 
 interface ExpiringMembersWidgetProps {
   onNavigate: (page: 'dashboard' | 'members' | 'finances' | 'classes' | 'settings') => void;

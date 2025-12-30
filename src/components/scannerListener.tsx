@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useAttendance } from "./attendanceContext";
+import { Member } from "../types/types";
 
 type ScanResult =
-  | { type: "ACCESS_GRANTED"; name: string }
+  | { type: "ACCESS_GRANTED"; member: Member; checkInTime: string }
   | {
       type: "ACCESS_DENIED";
       reason: "MEMBER_NOT_FOUND" | "MEMBERSHIP_EXPIRED" | "ALREADY_CHECKED_IN";
@@ -13,6 +15,8 @@ export default function ScannerListener() {
   const wsRef = useRef<WebSocket | null>(null);
   const bufferRef = useRef<string>("");
   const lastKeyTimeRef = useRef<number>(0);
+
+  const { setLiveAttendance } = useAttendance();
 
   useEffect(() => {
     let reconnectTimer: ReturnType<typeof setTimeout>;
@@ -30,6 +34,13 @@ export default function ScannerListener() {
         console.log("📩 Scanner response:", data);
 
         setResult(data);
+
+        if (data.type === "ACCESS_GRANTED") {
+          setLiveAttendance({
+            ...data.member,
+            checkInTime: data.checkInTime,
+          });
+        }
 
         setTimeout(() => {
           setResult(null);
