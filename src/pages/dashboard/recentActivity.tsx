@@ -17,9 +17,18 @@ export function RecentActivity() {
     queryKey: ["recent-activity"],
     queryFn: async () => {
       const res = await API.get("/attendances");
-      return res.data.sort((a: Attendance, b: Attendance) => 
-        new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime()
-      );
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      
+      return res.data
+        .filter((log: Attendance) => {
+          const logDate = new Date(log.checkInTime);
+          logDate.setHours(0, 0, 0, 0);
+          return logDate.getTime() === today.getTime();
+        })
+        .sort((a: Attendance, b: Attendance) => 
+          new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime()
+        );
     },
     refetchInterval: 30000,
   });
@@ -53,7 +62,7 @@ export function RecentActivity() {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
+      <div className="max-h-[320px] overflow-y-auto space-y-3 pr-1 custom-scrollbar">
         {isLoading ? (
           [...Array(5)].map((_, i) => (
             <div key={i} className="flex items-center gap-3 p-2 animate-pulse">

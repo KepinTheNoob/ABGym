@@ -101,7 +101,7 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
         daysLeft,
       };
     })
-    .filter(m => m.status === "Expiring")   // ← pakai status backend
+    .filter(m => m.status === "Expiring")   
     .filter(m => {
       if (selectedDays === 7) {
         // 3D tab → 0–3 hari
@@ -112,11 +112,6 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
     })
     .sort((a, b) => a.daysLeft - b.daysLeft)
     .slice(0, 6);
-
-
-
-
-
 
   return (
     <>
@@ -193,6 +188,7 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
             flex-1
             pr-1
             max-h-[170px]
+            custom-scrollbar
           "
         >
           {expiringMembers.map((member) => (
