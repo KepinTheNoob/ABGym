@@ -11,6 +11,7 @@ import Categories from "./pages/categories/categories.tsx";
 import ScannerListener from "./components/scannerListener.tsx";
 import { AttendanceProvider } from "./components/attendanceContext.tsx";
 import Dashboard from "./pages/dashboard/dashboard.tsx";
+import { LoginPage } from "./pages/login/login.tsx";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <AttendanceProvider>
           <ScannerListener />
           <Routes>
+            <Route path="/login" element={<LoginPage />} />
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/dashboard" element={<Dashboard />} />
