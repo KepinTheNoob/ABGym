@@ -83,7 +83,7 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
     >
         <div
           ref={modalRef}
-          className="relative overflow-hidden rounded-[2rem] shadow-2xl text-center w-full max-w-[360px] h-[780px] p-5 sm:p-6 transform transition-all duration-300">
+          className="relative overflow-hidden rounded-[2rem] shadow-2xl text-center w-full max-w-[380px] h-[780px] p-5 sm:p-6 transform transition-all duration-300">
         <div
           data-html2canvas-ignore
           className="absolute top-9 right-9 z-30"
