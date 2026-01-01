@@ -90,6 +90,59 @@ export default function Finances() {
     },
   });
 
+  const handleExport = () => {
+  if (!transactions.length) {
+    toast.error("No data to export");
+    return;
+  }
+
+  const separator = ";";
+
+  const headers = [
+    "ID",
+    "Description",
+    "Category",
+    "Date",
+    "Type",
+    "Amount",
+    "Payment Method",
+  ];
+
+  const escape = (value: any) =>
+    `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+  const rows = transactions.map((t) => [
+    escape(t.id),
+    escape(t.description),
+    escape(t.category?.name || "Uncategorized"),
+    escape(new Date(t.transactionDate).toLocaleDateString()),
+    escape(t.type),
+    escape(t.amount),
+    escape(t.paymentMethod),
+  ]);
+
+  const csvContent = [
+    headers.map(escape).join(separator),
+    ...rows.map((row) => row.join(separator)),
+  ].join("\n");
+
+  const blob = new Blob(["\uFEFF" + csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `financial_report_${new Date()
+    .toISOString()
+    .split("T")[0]}.csv`;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+
   const createMutation = useMutation({
     mutationFn: async (newTransaction: any) => {
       const res = await API.post("/transactions", newTransaction);
@@ -159,10 +212,10 @@ export default function Finances() {
     return {
       revenue: currentRevenue,
       revenueChange: calculateChange(currentRevenue, prevRevenue),
-      
+
       expenses: currentExpenses,
       expensesChange: calculateChange(currentExpenses, prevExpenses),
-      
+
       netProfit: currentProfit,
       netProfitChange: calculateChange(currentProfit, prevProfit),
     };
@@ -234,7 +287,10 @@ export default function Finances() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <button className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-[#1E2939] hover:bg-[#2B3A55] text-gray-300 font-bold rounded-xl transition-colors">
+            <button
+              onClick={handleExport}
+              className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-[#1E2939] hover:bg-[#2B3A55] text-gray-300 font-bold rounded-xl transition-colors"
+            >
               <Download className="w-4 h-4 mr-2" strokeWidth={3} />
               Export Report
             </button>
@@ -254,7 +310,9 @@ export default function Finances() {
           {/* Card 1: Revenue */}
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-sm font-medium text-gray-400">TOTAL PENDAPATAN</h3>
+              <h3 className="text-sm font-medium text-gray-400">
+                TOTAL PENDAPATAN
+              </h3>
               <div className="bg-green-500/20 p-1.5 rounded-md">
                 <TrendingUp className="w-5 h-5 text-green-500" />
               </div>
@@ -263,8 +321,13 @@ export default function Finances() {
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
                 Rp{stats.revenue.toLocaleString()}
               </span>
-              <span className={`font-medium text-sm ${stats.revenueChange >= 0 ? "text-green-500" : "text-red-500"}`}>
-                {stats.revenueChange >= 0 ? "+" : ""}{stats.revenueChange.toFixed(1)}%
+              <span
+                className={`font-medium text-sm ${
+                  stats.revenueChange >= 0 ? "text-green-500" : "text-red-500"
+                }`}
+              >
+                {stats.revenueChange >= 0 ? "+" : ""}
+                {stats.revenueChange.toFixed(1)}%
               </span>
             </div>
             <p className="text-sm text-gray-400">vs. last month</p>
@@ -273,7 +336,9 @@ export default function Finances() {
           {/* Card 2: Expenses */}
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-sm font-medium text-gray-400">TOTAL PENGELUARAN</h3>
+              <h3 className="text-sm font-medium text-gray-400">
+                TOTAL PENGELUARAN
+              </h3>
               <div className="bg-red-500/20 p-1.5 rounded-md">
                 <TrendingDown className="w-5 h-5 text-red-500" />
               </div>
@@ -283,8 +348,13 @@ export default function Finances() {
                 Rp{stats.expenses.toLocaleString()}
               </span>
               {/* For expenses, positive change (increase) is usually bad (red), negative (decrease) is good (green) */}
-              <span className={`font-medium text-sm ${stats.expensesChange <= 0 ? "text-green-500" : "text-red-500"}`}>
-                {stats.expensesChange >= 0 ? "+" : ""}{stats.expensesChange.toFixed(1)}%
+              <span
+                className={`font-medium text-sm ${
+                  stats.expensesChange <= 0 ? "text-green-500" : "text-red-500"
+                }`}
+              >
+                {stats.expensesChange >= 0 ? "+" : ""}
+                {stats.expensesChange.toFixed(1)}%
               </span>
             </div>
             <p className="text-sm text-gray-400">vs. last month</p>
@@ -293,7 +363,9 @@ export default function Finances() {
           {/* Card 3: Net Profit */}
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-sm font-medium text-gray-400">PROFIT BERSIH</h3>
+              <h3 className="text-sm font-medium text-gray-400">
+                PROFIT BERSIH
+              </h3>
               <div className="bg-yellow-500/20 p-1.5 rounded-md">
                 <DollarSign className="w-5 h-5 text-yellow-500" />
               </div>
@@ -302,8 +374,13 @@ export default function Finances() {
               <span className="text-2xl sm:text-3xl lg:text-4xl font-bold mr-2">
                 Rp{stats.netProfit.toLocaleString()}
               </span>
-              <span className={`font-medium text-sm ${stats.netProfitChange >= 0 ? "text-green-500" : "text-red-500"}`}>
-                {stats.netProfitChange >= 0 ? "+" : ""}{stats.netProfitChange.toFixed(1)}%
+              <span
+                className={`font-medium text-sm ${
+                  stats.netProfitChange >= 0 ? "text-green-500" : "text-red-500"
+                }`}
+              >
+                {stats.netProfitChange >= 0 ? "+" : ""}
+                {stats.netProfitChange.toFixed(1)}%
               </span>
             </div>
             <p className="text-sm text-gray-400">vs. last month</p>

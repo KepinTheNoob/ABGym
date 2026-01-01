@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { API } from "../../service/api";
@@ -36,7 +36,7 @@ const AddMembersModal = ({
     phone: "",
     dob: "",
     address: "",
-    profilePhoto: null,
+    profilePhoto: null as File | null,
     joinDate: "",
     paymentMethod: "",
     planId: "",
@@ -115,7 +115,21 @@ const AddMembersModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ ...formData, expirationDate });
+
+    const payload = new FormData();
+    payload.append("name", formData.name);
+    payload.append("email", formData.email);
+    payload.append("phone", formData.phone);
+    payload.append("dob", formData.dob);
+    payload.append("address", formData.address);
+    payload.append("joinDate", formData.joinDate);
+    payload.append("planId", formData.planId);
+
+    if (formData.profilePhoto) {
+      payload.append("profilePhoto", formData.profilePhoto);
+    }
+
+    onSubmit(payload);
   };
 
   if (!open) return null;
@@ -153,15 +167,34 @@ const AddMembersModal = ({
           <div>
             <label className="text-sm text-gray-400">Profile Photo</label>
             <div className="flex items-center gap-4 mt-2">
-              <div className="w-24 h-24 rounded-full border border-gray-700 flex items-center justify-center text-gray-500">
-                ??
+              <div className="w-24 h-24 rounded-full border border-gray-700 flex items-center justify-center text-gray-500 overflow-hidden">
+                {formData.profilePhoto ? (
+                  <img
+                    src={URL.createObjectURL(formData.profilePhoto)}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-gray-500">??</span>
+                )}
               </div>
-              <button
-                type="button"
-                className="px-4 py-2 rounded-lg bg-gray-800 text-sm hover:bg-gray-700"
-              >
+              <label className="px-4 py-2 rounded-lg bg-gray-800 text-sm hover:bg-gray-700 cursor-pointer">
                 Upload Photo
-              </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        profilePhoto: file,
+                      }));
+                    }
+                  }}
+                />
+              </label>
             </div>
           </div>
 
@@ -328,8 +361,9 @@ const AddMembersModal = ({
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 rounded-lg bg-[#F0B100] text-black font-bold text-sm hover:bg-[#d9a000] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-lg bg-[#F0B100] text-black font-bold text-sm hover:bg-[#d9a000] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
+              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               {isLoading ? "Saving..." : "Add Member"}
             </button>
           </div>

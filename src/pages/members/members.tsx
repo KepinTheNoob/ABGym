@@ -23,7 +23,7 @@ export default function Members() {
 
   // --- STATE MANAGEMENT ---
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Filtering & Sorting State
   const [statusFilter, setStatusFilter] = useState("All"); // All, Active, Expiring, Expired
   const [sortOrder, setSortOrder] = useState("Newest"); // Newest, Oldest, A-Z, Z-A
@@ -34,13 +34,13 @@ export default function Members() {
   const [openRenewal, setRenewalOpen] = useState(false);
   const [isRenewalVisible, setIsRenewalVisible] = useState(false);
   const [renewalMember, setRenewalMember] = useState<Member | null>(null);
-  
+
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAddVisible, setIsAddVisible] = useState(false);
-  
+
   const [qrOpen, setQrOpen] = useState(false);
   const [qrMember, setQrMember] = useState<Member | null>(null);
-  
+
   const [editOpen, setEditOpen] = useState(false);
   const [isEditVisible, setIsEditVisible] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -50,14 +50,20 @@ export default function Members() {
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
   // --- HANDLERS ---
-  
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
+      if (
+        statusMenuRef.current &&
+        !statusMenuRef.current.contains(event.target as Node)
+      ) {
         setShowStatusMenu(false);
       }
-      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
+      if (
+        sortMenuRef.current &&
+        !sortMenuRef.current.contains(event.target as Node)
+      ) {
         setShowSortMenu(false);
       }
     }
@@ -119,7 +125,11 @@ export default function Members() {
 
   const createMemberMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const res = await API.post("/members", payload);
+      const res = await API.post("/members", payload, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return res.data;
     },
     onSuccess: () => {
@@ -136,15 +146,12 @@ export default function Members() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       closeRenewalModal();
-      closeEditModal(); // Added closing edit modal on success
+      closeEditModal();
     },
   });
 
-  const handleAddSubmit = (data: any) => {
-    createMemberMutation.mutate({
-      ...data,
-      planId: Number(data.planId),
-    });
+  const handleAddSubmit = (data: FormData) => {
+    createMemberMutation.mutate(data);
   };
 
   const handleRenewalSubmit = (data: any) => {
@@ -167,15 +174,14 @@ export default function Members() {
   const tidakAktifCount = members.filter((m) => m.status === "Expired").length;
 
   // --- FILTERING & SORTING LOGIC ---
-  
+
   // 1. Filter
   const filteredMembers = members.filter((m) => {
-    const matchesSearch = 
-      m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch =
+      m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.id.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = 
-      statusFilter === "All" || m.status === statusFilter;
+
+    const matchesStatus = statusFilter === "All" || m.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -202,7 +208,7 @@ export default function Members() {
   const PaginationMember = 6;
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(processedMembers.length / PaginationMember);
-  
+
   // Use processedMembers instead of raw members
   const PaginatedMembers = processedMembers.slice(
     (currentPage - 1) * PaginationMember,
@@ -239,34 +245,51 @@ export default function Members() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {/* ... Stats cards (Same as before) ... */}
-           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-             <p className="text-gray-400 text-sm md:text-xl font-bold pb-4">Habis dalam 3 hari</p>
-             <div className="flex items-end gap-2">
-               <h3 className="text-2xl md:text-3xl font-bold">{akanHabisCount}</h3>
-             </div>
-             <p className="text-gray-400 text-xs md:text-sm pt-2">Perlu Perpanjangan Segera</p>
-           </div>
-           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-             <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">Habis dalam 7 hari</p>
-             <div className="flex items-end gap-2">
-               <h3 className="text-yellow-400 text-2xl md:text-3xl font-bold">{aktifCount}</h3>
-             </div>
-             <p className="text-gray-400 text-xs md:text-sm pt-2">Periode perpanjangan</p>
-           </div>
-           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-             <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">Member Kadaluwarsa</p>
-             <div className="flex items-end gap-2">
-               <h3 className=" text-2xl text-red-600 md:text-3xl font-bold">{tidakAktifCount}</h3>
-             </div>
-             <p className="text-gray-400 text-xs md:text-sm pt-2">Perlu Tindakan Segera</p>
-           </div>
+          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
+            <p className="text-gray-400 text-sm md:text-xl font-bold pb-4">
+              Habis dalam 3 hari
+            </p>
+            <div className="flex items-end gap-2">
+              <h3 className="text-2xl md:text-3xl font-bold">
+                {akanHabisCount}
+              </h3>
+            </div>
+            <p className="text-gray-400 text-xs md:text-sm pt-2">
+              Perlu Perpanjangan Segera
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
+            <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">
+              Habis dalam 7 hari
+            </p>
+            <div className="flex items-end gap-2">
+              <h3 className="text-yellow-400 text-2xl md:text-3xl font-bold">
+                {aktifCount}
+              </h3>
+            </div>
+            <p className="text-gray-400 text-xs md:text-sm pt-2">
+              Periode perpanjangan
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
+            <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">
+              Member Kadaluwarsa
+            </p>
+            <div className="flex items-end gap-2">
+              <h3 className=" text-2xl text-red-600 md:text-3xl font-bold">
+                {tidakAktifCount}
+              </h3>
+            </div>
+            <p className="text-gray-400 text-xs md:text-sm pt-2">
+              Perlu Tindakan Segera
+            </p>
+          </div>
         </div>
 
         {/* Table & Filters */}
         <div className="mt-8 bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-lg">
           <div className="p-5 border-b border-gray-800">
             <div className="flex flex-wrap gap-4">
-              
               {/* Search Bar */}
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -281,14 +304,21 @@ export default function Members() {
 
               {/* Status Filter Button */}
               <div className="relative" ref={statusMenuRef}>
-                <button 
+                <button
                   onClick={() => setShowStatusMenu(!showStatusMenu)}
                   className="flex items-center gap-2 bg-[#0a0a0a] text-yellow-500 px-4 py-2.5 rounded-lg border border-gray-800 text-sm hover:bg-gray-900 transition-colors min-w-[160px] justify-between"
                 >
-                  <span>Status: <span className="font-semibold">{statusFilter}</span></span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showStatusMenu ? 'rotate-180' : ''}`} />
+                  <span>
+                    Status:{" "}
+                    <span className="font-semibold">{statusFilter}</span>
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${
+                      showStatusMenu ? "rotate-180" : ""
+                    }`}
+                  />
                 </button>
-                
+
                 {showStatusMenu && (
                   <div className="absolute top-full mt-2 right-0 w-48 bg-[#161618] border border-gray-800 rounded-xl shadow-xl z-20 overflow-hidden">
                     {["All", "Active", "Expiring", "Expired"].map((status) => (
@@ -299,11 +329,17 @@ export default function Members() {
                           setShowStatusMenu(false);
                         }}
                         className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors flex items-center justify-between
-                          ${statusFilter === status ? "text-yellow-500 bg-gray-800/50" : "text-gray-300"}
+                          ${
+                            statusFilter === status
+                              ? "text-yellow-500 bg-gray-800/50"
+                              : "text-gray-300"
+                          }
                         `}
                       >
                         {status}
-                        {statusFilter === status && <Check className="w-3.5 h-3.5" />}
+                        {statusFilter === status && (
+                          <Check className="w-3.5 h-3.5" />
+                        )}
                       </button>
                     ))}
                   </div>
@@ -312,12 +348,12 @@ export default function Members() {
 
               {/* Sort Button */}
               <div className="relative" ref={sortMenuRef}>
-                <button 
+                <button
                   onClick={() => setShowSortMenu(!showSortMenu)}
                   className="flex items-center gap-2 bg-[#0a0a0a] text-white px-4 py-2.5 rounded-lg border border-gray-800 text-sm hover:bg-gray-900 transition-colors min-w-[140px] justify-between"
                 >
                   <span className="flex items-center gap-2">
-                     Urutkan: <span className="text-gray-400">{sortOrder}</span>
+                    Urutkan: <span className="text-gray-400">{sortOrder}</span>
                   </span>
                   <SlidersHorizontal className="w-4 h-4 text-gray-400" />
                 </button>
@@ -337,17 +373,22 @@ export default function Members() {
                           setShowSortMenu(false);
                         }}
                         className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors flex items-center justify-between
-                          ${sortOrder === opt.value ? "text-yellow-500 bg-gray-800/50" : "text-gray-300"}
+                          ${
+                            sortOrder === opt.value
+                              ? "text-yellow-500 bg-gray-800/50"
+                              : "text-gray-300"
+                          }
                         `}
                       >
                         {opt.label}
-                        {sortOrder === opt.value && <Check className="w-3.5 h-3.5" />}
+                        {sortOrder === opt.value && (
+                          <Check className="w-3.5 h-3.5" />
+                        )}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-
             </div>
           </div>
 
@@ -355,17 +396,30 @@ export default function Members() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-800 bg-[#161618]/50">
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Member</th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Status</th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Paket</th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Kontak</th>
-                  <th className="text-center px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Ubah</th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                    Member
+                  </th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                    Paket
+                  </th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                    Kontak
+                  </th>
+                  <th className="text-center px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                    Ubah
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {PaginatedMembers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-16 text-center text-gray-500">
+                    <td
+                      colSpan={5}
+                      className="px-5 py-16 text-center text-gray-500"
+                    >
                       <div className="flex flex-col items-center gap-2">
                         <Search className="w-8 h-8 opacity-20" />
                         <p>No members found matching your criteria</p>
@@ -382,12 +436,19 @@ export default function Members() {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <img
-                            src={member.profilePhoto || "https://ui-avatars.com/api/?name=" + member.name + "&background=random"}
+                            src={
+                              member.profilePhoto ||
+                              "https://ui-avatars.com/api/?name=" +
+                                member.name +
+                                "&background=random"
+                            }
                             className="w-10 h-10 rounded-full border border-gray-700 object-cover"
                             alt={member.name}
                           />
                           <div>
-                            <p className="text-white text-sm font-medium">{member.name}</p>
+                            <p className="text-white text-sm font-medium">
+                              {member.name}
+                            </p>
                             <p className="text-gray-500 text-xs font-mono">
                               #GYM-{member.id.substring(0, 8)}
                             </p>
@@ -397,7 +458,11 @@ export default function Members() {
 
                       {/* Status */}
                       <td className="px-5 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(member.status)}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                            member.status
+                          )}`}
+                        >
                           <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
                           {member.status}
                         </span>
@@ -415,11 +480,15 @@ export default function Members() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-xs">
                             <Mail className="w-3.5 h-3.5 text-gray-500" />
-                            <span className="text-gray-300">{member.email}</span>
+                            <span className="text-gray-300">
+                              {member.email}
+                            </span>
                           </div>
                           <div className="flex items-center gap-2 text-xs">
                             <Phone className="w-3.5 h-3.5 text-gray-500" />
-                            <span className="text-gray-300">{member.phone}</span>
+                            <span className="text-gray-300">
+                              {member.phone}
+                            </span>
                           </div>
                         </div>
                       </td>
@@ -462,9 +531,16 @@ export default function Members() {
             {/* Pagination */}
             <div className="flex items-center justify-between px-5 py-4 border-t border-gray-800 bg-[#161618]/30">
               <p className="text-sm text-gray-500">
-                 Showing {processedMembers.length === 0 ? 0 : (currentPage - 1) * PaginationMember + 1}–
-                {Math.min(currentPage * PaginationMember, processedMembers.length)} of{" "}
-                {processedMembers.length} members
+                Showing{" "}
+                {processedMembers.length === 0
+                  ? 0
+                  : (currentPage - 1) * PaginationMember + 1}
+                –
+                {Math.min(
+                  currentPage * PaginationMember,
+                  processedMembers.length
+                )}{" "}
+                of {processedMembers.length} members
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -514,6 +590,7 @@ export default function Members() {
         isVisible={isAddVisible}
         onClose={closeAddModal}
         onSubmit={handleAddSubmit}
+        isLoading={createMemberMutation.isPending}
       />
 
       <EditMemberModal
@@ -525,10 +602,10 @@ export default function Members() {
         isLoading={updateMemberMutation.isPending}
       />
 
-      <QRModal 
-        open={qrOpen} 
-        member={qrMember} 
-        onClose={() => setQrOpen(false)} 
+      <QRModal
+        open={qrOpen}
+        member={qrMember}
+        onClose={() => setQrOpen(false)}
       />
     </div>
   );
