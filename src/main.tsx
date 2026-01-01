@@ -11,7 +11,8 @@ import Categories from "./pages/categories/categories.tsx";
 import ScannerListener from "./components/scannerListener.tsx";
 import { AttendanceProvider } from "./components/attendanceContext.tsx";
 import Dashboard from "./pages/dashboard/dashboard.tsx";
-import { LoginPage } from "./pages/login/login.tsx";
+import LoginPage from "./pages/login/login.tsx";
+import ProtectedRoute from "./pages/login/protectedRoute.tsx";
 
 const queryClient = new QueryClient();
 
@@ -23,13 +24,15 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <ScannerListener />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/members" element={<Members />} />
-              <Route path="/finances" element={<Finances />} />
-              <Route path="/categories" element={<Categories />} />
-              <Route path="/plans" element={<Plans />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/members" element={<Members />} />
+                <Route path="/finances" element={<Finances />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/plans" element={<Plans />} />
+              </Route>
             </Route>
           </Routes>
         </AttendanceProvider>

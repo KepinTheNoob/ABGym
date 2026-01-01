@@ -1,29 +1,45 @@
 import { useState } from "react";
-import { Dumbbell, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Dumbbell, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { API } from "../../service/api";
+import toast from "react-hot-toast";
 
-
-interface LoginPageProps {
-  onLoginSuccess: () => void;
-}
-
-export function LoginPage({ onLoginSuccess }: LoginPageProps) {
-
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function LoginPage() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
+    try {
+      const res = await API.post("/login", formData);
 
-    setTimeout(() => {
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+
+      toast.success("Welcome back!");
+
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
+    } catch (error: any) {
+      const msg = error.response?.data?.message || "Login failed";
+      toast.error(msg);
+    } finally {
       setIsLoading(false);
-      onLoginSuccess();
-    }, 1200);
+    }
   };
 
   return (
@@ -37,25 +53,21 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             <h1 className="text-white text-2xl font-bold mb-1">
               AB Fitness Center
             </h1>
-            <p className="text-gray-400 text-sm">
-              Management Dashboard
-            </p>
+            <p className="text-gray-400 text-sm">Management Dashboard</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="text-gray-400 text-sm mb-2 block">
-                Email
-              </label>
+              <label className="text-gray-400 text-sm mb-2 block">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
                 <input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder= "Admin@gmail.com"
+                  name="email"
+                  placeholder="admin@gmail.com"
                   className="w-full bg-[#0b0b0d] border border-gray-800 rounded-lg pl-11 pr-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-yellow-500 transition"
                   required
+                  onChange={handleChange}
                 />
               </div>
             </div>
@@ -68,9 +80,9 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
                 <input
+                  name="password"
                   type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handleChange}
                   placeholder="••••••••"
                   className="w-full bg-[#0b0b0d] border border-gray-800 rounded-lg pl-11 pr-11 py-3 text-white focus:outline-none focus:border-yellow-500 transition"
                   required
@@ -97,17 +109,23 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 accent-yellow-500"
               />
-              <span className="text-sm text-gray-400">
-                Remember Me
-              </span>
+              <span className="text-sm text-gray-400">Remember Me</span>
             </div>
 
             {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-4 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black py-3 rounded-lg font-semibold shadow-lg shadow-yellow-500/20 hover:from-yellow-600 hover:to-yellow-700 transition disabled:opacity-50"
-            > Sign in 
+              className="w-full mt-4 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black py-3 rounded-lg font-semibold shadow-lg shadow-yellow-500/20 hover:from-yellow-600 hover:to-yellow-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                "Sign In"
+              )}
             </button>
           </form>
         </div>
