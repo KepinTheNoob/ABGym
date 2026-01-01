@@ -84,15 +84,9 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
         <div
           ref={modalRef}
           className="relative overflow-hidden rounded-[2rem] shadow-2xl text-center w-full max-w-[360px] h-[780px] p-5 sm:p-6 transform transition-all duration-300">
-        <img
-          src={bg}
-          className="absolute inset-0 w-full h-full object-cover"
-          alt=""
-        /> 
-
         <div
           data-html2canvas-ignore
-          className="absolute top-4 right-4 z-30"
+          className="absolute top-9 right-9 z-30"
         >
           <button
             onClick={() => member && downloadCard(member)}
@@ -114,22 +108,27 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
         <div ref={cardRef} className="relative w-full h-full overflow-visible">
         <div className="absolute inset-0" />
 
+        <img
+          src={bg}
+          className="absolute inset-0 w-full h-full object-cover rounded-xl"
+          alt=""
+        /> 
         {/* Content */}
-        <div className="relative z-10 flex flex-col items-center p-4 sm:p-5 pt-12">
+        <div className="relative z-10 flex flex-col items-center px-4 sm:px-5 pt-4 pb-4 scale-[0.92]">
           {/* Profile */}
-          <div className="flex flex-col items-center mb-4">
-           <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-black flex items-center justify-center border-[3px] border-[#C99C33] shadow-[0_0_25px_rgba(201,156,51,0.6)]">
+          <div className="flex flex-col items-center mb-2">
+           <div className="w-26 h-26 sm:w-28 sm:h-28 rounded-full bg-black flex items-center justify-center border-[3px] border-[#C99C33] shadow-[0_0_25px_rgba(201,156,51,0.6)]">
               <img
                 src={member.profilePhoto || `https://ui-avatars.com/api/?name=${member.name}`}
                 className="w-full h-full object-cover rounded-full"
               />
             </div>
-            <p className="mt-2 text-white font-semibold text-sm sm:text-base truncate max-w-[200px] text-center">
+            <p className="mt-2.5 text-white font-bold text-xl sm:text-xl truncate max-w-[200px] text-center pb-2">
               {member.name}
             </p>
           </div>
 
-          <div className="w-full bg-[#0f0f10] border border-gray-600/40 rounded-2xl p-4 sm:p-5 shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
+          <div className="w-full bg-[#0f0f10] border border-gray-600/40 rounded-2xl p-4 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.9)]">
             {/* QR Code */}
             <div className="w-full max-w-[260px] mb-6 sm:mb-8 mx-auto">
               <div
@@ -153,11 +152,18 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
             </div>
 
             {/* Plan Badge */}
-            <div className="flex justify-center mb-6">
-              <span className="px-6 py-2 sm:px-8 sm:py-2.5 rounded-full bg-[#C99C33] text-[#161618] font-bold text-xs sm:text-sm tracking-wider uppercase shadow-md whitespace-nowrap">
-                {member.plans?.name || "MEMBER"}
-              </span>
+            <div className="flex justify-center mb-5">
+              <div className="relative inline-block">
+
+                <span
+                  className="relative z-10 px-8 sm:px-8 py-4 sm:py-5 text-[#161618] font-bold text-2xl sm:text-lg tracking-wider uppercase whitespace-nowrap -translate-y-2">
+                  {member.plans?.name || "MEMBER"}
+                </span>
+                <div
+                  className="absolute inset-0 bg-[#C99C33] rounded-full shadow-md"/>
+              </div>
             </div>
+
 
             {/* Decorative Lines */}
             <div className="flex items-center justify-center gap-3 mb-6 sm:mb-8 text-[#C99C33] opacity-90">
@@ -172,12 +178,12 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
           <div className="text-left flex flex-col gap-1 text-xs sm:text-sm font-medium w-full">
             <div className="flex justify-between items-center py-3 border-b border-white/10">
               <span className="text-gray-400/80">Member ID</span>
-              <span className="text-[#C99C33] font-bold tracking-wider truncate max-w-[150px]">
+              <span className="text-[#C99C33] font-bold tracking-wider truncate max-w-[150px] pb-1">
                 GYM-{member.id.substring(0, 8)}
               </span>
             </div>
 
-            <div className="flex justify-between items-center py-3 border-b border-white/10">
+            <div className="flex justify-between items-center py-4 border-b border-white/10">
               <span className="text-gray-400/80">Member Since</span>
               <span className="text-white font-semibold">
                 {formatDate(member.joinDate)}
