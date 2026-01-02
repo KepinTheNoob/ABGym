@@ -96,14 +96,14 @@ export default function Categories() {
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1">
           <h2 className="text-xl md:text-2xl font-bold">
             Categories Management
           </h2>
           <button
-            onClick={openAddModal}
-            className="flex items-center gap-2 bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold py-2 px-4 rounded-xl"
-          >
+              onClick={openAddModal}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold py-2.5 px-4 rounded-xl"
+            >
             <Plus className="w-4 h-4" />
             Add Category
           </button>
@@ -113,86 +113,134 @@ export default function Categories() {
         </p>
 
         {/* Table Card */}
-        <div className="mt-8 bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-lg">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
-              <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                    Name
-                  </th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                    Description
-                  </th>
-                  <th className="text-center px-5 py-4 text-gray-400 text-xs uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
+       <div className="mt-8 bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-lg">
 
-              <tbody>
-                {isFetching ? (
-                  <tr>
-                    <td
-                      colSpan={3}
-                      className="px-5 py-10 text-center text-gray-400"
-                    >
-                      <div className="flex justify-center items-center gap-2">
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Loading categories...
-                      </div>
-                    </td>
-                  </tr>
-                ) : categories.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={3}
-                      className="px-5 py-10 text-center text-gray-400"
-                    >
-                      No categories created yet
-                    </td>
-                  </tr>
-                ) : (
-                  categories.map((category) => (
-                    <tr
-                      key={category.id}
-                      className="border-b border-gray-800/50 hover:bg-gray-900/30 transition"
-                    >
-                      <td className="px-5 py-4 text-sm font-medium">
-                        {category.name}
-                      </td>
-                      <td className="px-5 py-4 text-sm text-gray-300">
-                        {category.description}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => openEditModal(category)}
-                            className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(category.id)}
-                            disabled={deleteMutation.isPending}
-                            className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition disabled:opacity-50"
-                          >
-                            {deleteMutation.isPending &&
-                            deleteMutation.variables === category.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+  {/* ================= MOBILE VIEW ================= */}
+  <div className="md:hidden divide-y divide-gray-800">
+    {isFetching ? (
+      <div className="p-6 text-center text-gray-400 flex justify-center gap-2">
+        <Loader2 className="w-5 h-5 animate-spin" />
+        Loading categories...
+      </div>
+    ) : categories.length === 0 ? (
+      <div className="p-6 text-center text-gray-400">
+        No categories created yet
+      </div>
+    ) : (
+      categories.map((category) => (
+        <div key={category.id} className="p-4 space-y-3">
+          <div>
+            <p className="font-semibold text-white">{category.name}</p>
+            <p className="text-sm text-gray-400 line-clamp-2">
+              {category.description}
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => openEditModal(category)}
+              className="flex-1 py-2 bg-blue-500/10 text-blue-400 rounded-lg"
+            >
+              Edit
+            </button>
+
+            <button
+              onClick={() => handleDelete(category.id)}
+              disabled={deleteMutation.isPending}
+              className="flex-1 py-2 bg-red-500/10 text-red-400 rounded-lg disabled:opacity-50"
+            >
+              {deleteMutation.isPending &&
+              deleteMutation.variables === category.id ? (
+                <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+              ) : (
+                "Delete"
+              )}
+            </button>
           </div>
         </div>
+      ))
+    )}
+  </div>
+
+  {/* ================= DESKTOP VIEW ================= */}
+  <div className="hidden md:block overflow-x-auto">
+    <table className="w-full min-w-[600px]">
+      <thead>
+        <tr className="border-b border-gray-800">
+          <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+            Name
+          </th>
+          <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
+            Description
+          </th>
+          <th className="text-center px-5 py-4 text-gray-400 text-xs uppercase">
+            Actions
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {isFetching ? (
+          <tr>
+            <td colSpan={3} className="px-5 py-10 text-center text-gray-400">
+              <div className="flex justify-center items-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Loading categories...
+              </div>
+            </td>
+          </tr>
+        ) : categories.length === 0 ? (
+          <tr>
+            <td colSpan={3} className="px-5 py-10 text-center text-gray-400">
+              No categories created yet
+            </td>
+          </tr>
+        ) : (
+          categories.map((category) => (
+            <tr
+              key={category.id}
+              className="border-b border-gray-800/50 hover:bg-gray-900/30 transition"
+            >
+              <td className="px-5 py-4 text-sm font-medium">
+                {category.name}
+              </td>
+
+              <td className="px-5 py-4 text-sm text-gray-300">
+                {category.description}
+              </td>
+
+              <td className="px-5 py-4">
+                <div className="flex justify-center gap-2">
+                  <button
+                    onClick={() => openEditModal(category)}
+                    className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(category.id)}
+                    disabled={deleteMutation.isPending}
+                    className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition disabled:opacity-50"
+                  >
+                    {deleteMutation.isPending &&
+                    deleteMutation.variables === category.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
       </main>
 
       <AddCategoriesModal

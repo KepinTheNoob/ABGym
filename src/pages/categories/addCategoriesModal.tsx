@@ -58,15 +58,15 @@ export default function AddCategoriesModal({
   if (!open) return null;
 
   return (
-    <div
-      onClick={onClose}
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 transition-opacity duration-300 ${
-        isVisible ? "opacity-100" : "opacity-0"
-      }`}
-    >
+      <div
+        onClick={onClose}
+        className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 transition-opacity duration-300 p-4 overflow-y-auto ${
+          isVisible ? "opacity-100" : "opacity-0"
+        }`}
+      >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`w-full max-w-md rounded-xl bg-[#161618] border border-gray-800 p-6 transform transition-all duration-300 ${
+        className={`w-full max-w-md md:max-w-md rounded-xl bg-[#161618] border border-gray-800 p-4 md:p-6 transform transition-all duration-300 ${
           isVisible
             ? "scale-100 opacity-100 translate-y-0"
             : "scale-95 opacity-0 translate-y-4"
@@ -74,7 +74,7 @@ export default function AddCategoriesModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold">
+          <h3 className="text-base md:text-lg font-bold">
             {initialData ? "Edit Category" : "Add New Category"}
           </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
@@ -96,7 +96,7 @@ export default function AddCategoriesModal({
               value={form.name}
               onChange={handleChange}
               placeholder="e.g. Utilities"
-              className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2 text-sm focus:outline-none focus:border-yellow-500"
+              className="mt-1 w-full rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2.5 text-sm focus:outline-none focus:border-yellow-500"
             />
           </div>
 

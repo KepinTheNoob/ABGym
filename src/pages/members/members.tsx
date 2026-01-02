@@ -17,6 +17,8 @@ import RenewalMembersModal from "./renewalMembersModal";
 import QRModal from "./qrModal";
 import EditMemberModal from "./editMemberModal";
 import { Member } from "../../types/types";
+import { Trash2, Loader2 } from "lucide-react";
+
 
 export default function Members() {
   const queryClient = useQueryClient();
@@ -150,6 +152,16 @@ export default function Members() {
     },
   });
 
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await API.delete(`/members/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    },
+  });
+
+
   const handleAddSubmit = (data: FormData) => {
     createMemberMutation.mutate(data);
   };
@@ -167,6 +179,13 @@ export default function Members() {
   const handleEditSubmit = (data: any) => {
     updateMemberMutation.mutate(data);
   };
+
+  const handleDeleteMember = (id: string) => {
+    if (confirm("Are you sure you want to delete this member?")) {
+      deleteMemberMutation.mutate(id);
+    }
+  };
+
 
   // --- STATS CALCULATION ---
   const aktifCount = members.filter((m) => m.status === "Active").length;
@@ -226,22 +245,64 @@ export default function Members() {
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         <div>
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1">
             <h2 className="text-xl md:text-2xl font-bold">
               Membership Management
             </h2>
             <button
-              className="bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold py-2 px-4 rounded-xl"
-              onClick={openAddModal}
-            >
-              + Add New Member
-            </button>
+            className="w-full sm:w-auto bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold py-2.5 px-4 rounded-xl"
+            onClick={openAddModal}
+          >
+            + Add New Member
+          </button>
           </div>
           <p className="text-gray-400 mb-6 text-sm md:text-base">
             Atur Anggota, Membership dan Keuangan
           </p>
         </div>
 
+         <div className="md:hidden mt-6 divide-y divide-gray-800">
+          {PaginatedMembers.map((member) => (
+            <div key={member.id} className="p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={
+                    member.profilePhoto ||
+                    "https://ui-avatars.com/api/?name=" + member.name
+                  }
+                  className="w-12 h-12 rounded-full border border-gray-700"
+                />
+                <div className="flex-1">
+                  <p className="font-semibold">{member.name}</p>
+                  <p className="text-xs text-gray-400">#GYM-{member.id.substring(0, 8)}</p>
+                </div>
+                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(member.status)}`}>
+                  {member.status}
+                </span>
+              </div>
+
+              <div className="text-sm text-gray-400">
+                <p>{member.plans?.name}</p>
+                <p>{member.email}</p>
+                <p>{member.phone}</p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setQrMember(member);
+                    setQrOpen(true);
+                  }}className="flex-1 py-2 bg-gray-800 rounded">QR</button>
+                <button onClick={() => openRenewalModal(member)} className="flex-1 py-2 bg-yellow-500/10 text-yellow-500 rounded">Renew</button>
+                <button onClick={() => openEditModal(member)} className="flex-1 py-2 bg-blue-500/10 text-blue-400 rounded">Edit</button>
+                <button onClick={() => handleDeleteMember(member.id)} className="flex-1 py-2 bg-red-500/10 text-red-400 rounded">Del</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ================= DESKTOP TABLE ================= */}
+        <div className="hidden md:block mt-6">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {/* ... Stats cards (Same as before) ... */}
@@ -520,6 +581,19 @@ export default function Members() {
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
+                          <button
+                            title="Delete"
+                            onClick={() => handleDeleteMember(member.id)}
+                            disabled={deleteMemberMutation.isPending}
+                            className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition disabled:opacity-50"
+                          >
+                            {deleteMemberMutation.isPending &&
+                            deleteMemberMutation.variables === member.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -527,6 +601,7 @@ export default function Members() {
                 )}
               </tbody>
             </table>
+            </div>
 
             {/* Pagination */}
             <div className="flex items-center justify-between px-5 py-4 border-t border-gray-800 bg-[#161618]/30">

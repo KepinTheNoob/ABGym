@@ -124,12 +124,12 @@ export default function Plans() {
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white p-4 md:p-8">
       <Toaster position="top-center" />
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
         <h2 className="text-xl md:text-2xl font-bold">Plans Management</h2>
         <button
-          onClick={openAddModal}
-          className="flex items-center gap-2 bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold py-2 px-4 rounded-xl"
-        >
+            onClick={openAddModal}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold py-2.5 px-4 rounded-xl"
+          >
           <Plus className="w-4 h-4" />
           Add Plan
         </button>
@@ -138,93 +138,148 @@ export default function Plans() {
         Manage membership plans and pricing
       </p>
 
-      <div className="bg-[#161618] border border-gray-800 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            <thead>
-              <tr className="border-b border-gray-800">
-                <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                  Plan Name
-                </th>
-                <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                  Price
-                </th>
-                <th className="text-left px-5 py-4 text-gray-400 text-xs uppercase">
-                  Duration
-                </th>
-                <th className="text-center px-5 py-4 text-gray-400 text-xs uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
+    <div className="bg-[#161618] border border-gray-800 rounded-xl overflow-hidden">
 
-            <tbody>
-              {isFetching ? (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-5 py-10 text-center text-gray-400"
-                  >
-                    <div className="flex justify-center items-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Loading plans...
-                    </div>
-                  </td>
-                </tr>
-              ) : plans.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-5 py-10 text-center text-gray-400"
-                  >
-                    No plans created yet
-                  </td>
-                </tr>
-              ) : (
-                plans.map((plan) => (
-                  <tr
-                    key={plan.id}
-                    className="border-b border-gray-800/50 hover:bg-gray-900/30 transition"
-                  >
-                    <td className="px-5 py-4 text-sm font-medium">
-                      {plan.name}
-                    </td>
-                    <td className="px-5 py-4 text-sm">
-                      Rp {plan.price.toLocaleString("id-ID")}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-gray-300 capitalize">
-                      {plan.durationValue} {plan.durationUnit.toLowerCase()}
-                      {plan.durationValue > 1 ? "s" : ""}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => openEditModal(plan)}
-                          className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(plan.id)}
-                          disabled={deleteMutation.isPending}
-                          className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition disabled:opacity-50"
-                        >
-                          {deleteMutation.isPending &&
-                          deleteMutation.variables === plan.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* ================= MOBILE VIEW ================= */}
+      <div className="md:hidden divide-y divide-gray-800">
+        {isFetching ? (
+          <div className="p-6 text-center text-gray-400 flex justify-center gap-2">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Loading plans...
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="p-6 text-center text-gray-400">
+            No plans created yet
+          </div>
+        ) : (
+          plans.map((plan) => (
+            <div key={plan.id} className="p-4 space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold text-white">{plan.name}</p>
+                  <p className="text-sm text-gray-400">
+                    {plan.durationValue} {plan.durationUnit.toLowerCase()}
+                    {plan.durationValue > 1 ? "s" : ""}
+                  </p>
+                </div>
+                <p className="font-bold text-[#F0B100]">
+                  Rp {plan.price.toLocaleString("id-ID")}
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => openEditModal(plan)}
+                  className="flex-1 py-2 bg-blue-500/10 text-blue-400 rounded-lg"
+                >
+                  Edit
+                </button>
+
+                <button
+                  onClick={() => handleDelete(plan.id)}
+                  disabled={deleteMutation.isPending}
+                  className="flex-1 py-2 bg-red-500/10 text-red-400 rounded-lg disabled:opacity-50"
+                >
+                  {deleteMutation.isPending &&
+                  deleteMutation.variables === plan.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                  ) : (
+                    "Delete"
+                  )}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
+
+      {/* ================= DESKTOP VIEW ================= */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full min-w-[520px]">
+                <thead>
+                  <tr className="border-b border-gray-800">
+                    <th className="text-left px-3 sm:px-5 py-3 sm:py-4 text-gray-400 text-xs uppercase">
+                      Plan Name
+                    </th>
+                    <th className="text-left px-3 sm:px-5 py-3 sm:py-4 text-gray-400 text-xs uppercase">
+                      Price
+                    </th>
+                    <th className="text-left px-3 sm:px-5 py-3 sm:py-4 text-gray-400 text-xs uppercase">
+                      Duration
+                    </th>
+                    <th className="text-center px-3 sm:px-5 py-3 sm:py-4 text-gray-400 text-xs uppercase">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {isFetching ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-5 py-10 text-center text-gray-400"
+                      >
+                        <div className="flex justify-center items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Loading plans...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : plans.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-5 py-10 text-center text-gray-400"
+                      >
+                        No plans created yet
+                      </td>
+                    </tr>
+                  ) : (
+                    plans.map((plan) => (
+                      <tr
+                        key={plan.id}
+                        className="border-b border-gray-800/50 hover:bg-gray-900/30 transition"
+                      >
+                        <td className="px-3 sm:px-5 py-3 sm:py-4 text-sm font-medium">
+                          {plan.name}
+                        </td>
+                        <td className="px-3 sm:px-5 py-3 sm:py-4 text-sm">
+                          Rp {plan.price.toLocaleString("id-ID")}
+                        </td>
+                        <td className="px-3 sm:px-5 py-3 sm:py-4 text-sm text-gray-300 capitalize">
+                          {plan.durationValue} {plan.durationUnit.toLowerCase()}
+                          {plan.durationValue > 1 ? "s" : ""}
+                        </td>
+                        <td className="px-3 sm:px-5 py-3 sm:py-4">
+                          <div className="flex justify-center gap-2 flex-wrap sm:flex-nowrap">
+                            <button
+                              onClick={() => openEditModal(plan)}
+                              className="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(plan.id)}
+                              disabled={deleteMutation.isPending}
+                              className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition disabled:opacity-50"
+                            >
+                              {deleteMutation.isPending &&
+                              deleteMutation.variables === plan.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
       <PlansModal
         open={open}
@@ -237,3 +292,7 @@ export default function Plans() {
     </div>
   );
 }
+
+
+
+
