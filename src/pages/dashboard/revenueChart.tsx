@@ -91,12 +91,12 @@ export default function RevenueChart() {
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <p className="text-white font-semibold">Revenue Trends</p>
-          <p className="text-gray-400 text-xs">Last 6 months</p>
+          <p className="text-white font-semibold">Tren Pendapatan</p>
+          <p className="text-gray-400 text-xs">6 Bulan Terakhir</p>
         </div>
         <div className="text-right">
           <p className="text-white font-semibold">
-            ${totalRevenue.toLocaleString()}
+            RP. {totalRevenue.toLocaleString()}
           </p>
           <p
             className={`text-xs font-medium ${
@@ -125,7 +125,7 @@ export default function RevenueChart() {
             <YAxis
               stroke="#666"
               tick={{ fill: "#888", fontSize: 12 }}
-              tickFormatter={(v) => `$${v / 1000}k`}
+              tickFormatter={(v) => `RP. ${v / 1000}k`}
               axisLine={false}
               tickLine={false}
             />
@@ -138,7 +138,7 @@ export default function RevenueChart() {
               }}
               formatter={(value) => {
                 if (typeof value === "number") {
-                  return [`$${value.toLocaleString()}`, "Revenue"];
+                  return [`RP. ${value.toLocaleString()}`, "Revenue"];
                 }
                 return [value, "Revenue"];
               }}

@@ -3,6 +3,11 @@ import AttendanceChart from "./attendanceChart";
 import { RecentActivity } from "./recentActivity";
 import { ExpiringMembersWidget } from "./ExpiringWidgets";
 import { useAttendance } from "../../components/attendanceContext";
+import { useQuery } from "@tanstack/react-query";
+import { API } from "../../service/api";
+import { Member } from "../../types/types";
+import { Transaction } from "../../types/types"; 
+
 
 export default function Dashboard() {
   const { liveAttendance } = useAttendance();
@@ -33,6 +38,95 @@ export default function Dashboard() {
     }
   }
 
+  const { data: members = [] } = useQuery<Member[]>({
+    queryKey: ["members"],
+    queryFn: async () => {
+      const res = await API.get("/members");
+      return res.data;
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60,
+  });
+
+
+  const aktifCount = members.filter((m) => m.status === "Active").length;
+  const expiring7DaysCount = members.filter((m) => m.status === "Expiring").length;
+  const expiredCount = members.filter((m) => m.status === "Expired").length;
+
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const newTodayCount = members.filter((m) => {
+    if (!m.joinDate) return false;
+    return isSameDay(new Date(m.joinDate), new Date());
+  }).length;
+
+
+  const { data: transactions = [] } = useQuery<any[]>({
+    queryKey: ["transactions"],
+    queryFn: async () => {
+      const res = await API.get("/transactions");
+      return res.data;
+    },
+    staleTime: 1000 * 60,
+  });
+
+    const stats = (() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+    const parseDate = (dateStr: string) => new Date(dateStr.replace(" ", "T"));
+
+    let currentRevenue = 0;
+    let currentExpenses = 0;
+    let prevRevenue = 0;
+    let prevExpenses = 0;
+
+    transactions.forEach((t) => {
+      const d = parseDate(t.transactionDate);
+      const m = d.getMonth();
+      const y = d.getFullYear();
+      const amt = Number(t.amount);
+
+      if (m === currentMonth && y === currentYear) {
+        if (t.type === "Income") currentRevenue += amt;
+        else currentExpenses += amt;
+      } else if (m === prevMonth && y === prevYear) {
+        if (t.type === "Income") prevRevenue += amt;
+        else prevExpenses += amt;
+      }
+    });
+
+    const currentProfit = currentRevenue - currentExpenses;
+    const prevProfit = prevRevenue - prevExpenses;
+
+    const calculateChange = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
+    return {
+      revenue: currentRevenue,
+      revenueChange: calculateChange(currentRevenue, prevRevenue),
+      expenses: currentExpenses,
+      expensesChange: calculateChange(currentExpenses, prevExpenses),
+      netProfit: currentProfit,
+      netProfitChange: calculateChange(currentProfit, prevProfit),
+    };
+  })();
+
+
+
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
       {/* Main Content */}
@@ -51,41 +145,45 @@ export default function Dashboard() {
               Total Member Aktif
             </p>
             <div className="flex items-end gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold">1370</h3>
-              <span className="text-green-400 text-xs md:text-sm mb-1">
-                -2%
-              </span>
+              <h3 className="text-2xl md:text-5xl font-bold">{aktifCount}</h3>
             </div>
-            <span className="text-gray-400 text-xs md:text-sm mb-1">
-              vs Last month
-            </span>
           </div>
 
           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
             <p className="text-gray-400 text-sm md:text-base pb-4">
               Pendapatan Bulanan
             </p>
-            <div className="flex items-end gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold">Rp. 1.500.000</h3>
-              <span className="text-green-400 text-xs md:text-sm mb-1">
-                +2%
-              </span>
+            <div className="flex items-end gap-2 pb-2">
+              <h3 className="text-4xl md:text-4xl font-bold">Rp. {stats.revenue.toLocaleString()}</h3>
             </div>
-            <span className="text-gray-400 text-xs md:text-sm mb-1">
-              vs Last month
+            <span
+              className={`text-xs md:text-sm ${
+                stats.revenueChange >= 0 ? "text-green-400" : "text-red-400"
+              }`}
+            >
+              {stats.revenueChange >= 0 ? "+" : ""}
+              {stats.revenueChange.toFixed(1)}% vs last month
             </span>
           </div>
 
           <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
             <p className="text-gray-400 text-sm md:text-base pb-4">
-              Member Baru Hari ini
+              Membership Akan Habis (7 Hari)
             </p>
+
             <div className="flex items-end gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold">13</h3>
-              <span className="text-red-400 text-xs md:text-sm mb-1">+2%</span>
+              <h3 className="text-yellow-400 text-5xl md:text-5xl font-bold">
+                {expiring7DaysCount}
+              </h3>
+
+              {expiring7DaysCount > 0 && (
+                <span className="text-yellow-400 text-xs md:text-sm mb-1">
+                  Follow up
+                </span>
+              )}
             </div>
             <span className="text-gray-400 text-xs md:text-sm mb-1">
-              vs Yesterday
+              Periode Perpanjangan
             </span>
           </div>
 
@@ -94,11 +192,10 @@ export default function Dashboard() {
               Member Kadaluarsa
             </p>
             <div className="flex items-end gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold">13</h3>
-              <span className="text-red-400 text-xs md:text-sm mb-1">+2%</span>
+              <h3 className="text-2xl md:text-5xl font-bold">{expiredCount}</h3>
             </div>
             <span className="text-gray-400 text-xs md:text-sm mb-1">
-              vs Yesterday
+              Segera Perbarui
             </span>
           </div>
         </div>

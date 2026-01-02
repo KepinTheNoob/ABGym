@@ -24,8 +24,10 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
 
   // --- Mutations ---
   const createMemberMutation = useMutation({
-    mutationFn: async (payload: any) => {
-      const res = await API.post("/members", payload);
+  mutationFn: async (payload: FormData) => {
+      const res = await API.post("/members", payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       return res.data;
     },
     onSuccess: () => {
@@ -33,6 +35,7 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
       closeAddMemberModal();
     },
   });
+
 
   const createTransactionMutation = useMutation({
     mutationFn: async (payload: any) => {
@@ -84,8 +87,8 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
   };
 
   // --- Submit Handlers ---
-  const handleAddMemberSubmit = (data: any) => {
-    createMemberMutation.mutate({ ...data, planId: Number(data.planId) });
+  const handleAddMemberSubmit = (data: FormData) => {
+    createMemberMutation.mutate(data);
   };
 
   const handleAddExpenseSubmit = (data: any) => {
