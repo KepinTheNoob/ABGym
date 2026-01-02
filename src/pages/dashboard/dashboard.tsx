@@ -5,8 +5,7 @@ import { ExpiringMembersWidget } from "./ExpiringWidgets";
 import { useAttendance } from "../../components/attendanceContext";
 import { useQuery } from "@tanstack/react-query";
 import { API } from "../../service/api";
-import { Member } from "../../types/types";
-import { Transaction } from "../../types/types"; 
+import { Member } from "../../types/types"; 
 
 
 export default function Dashboard() {
