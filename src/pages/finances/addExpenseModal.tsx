@@ -153,14 +153,14 @@ export default function AddExpenseModal({
             <div>
               <label className="text-xs text-gray-400">Amount</label>
               <div className="relative mt-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">Rp</span>
                 <input
                   name="amount"
                   type="number"
                   value={form.amount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="w-full rounded-lg bg-[#0a0a0a] border border-gray-800 pl-6 pr-3 py-2 text-sm focus:outline-none focus:border-yellow-500 no-spinner"
+                  className="w-full rounded-lg bg-[#0a0a0a] border border-gray-800 pl-8 pr-3 py-2 text-sm focus:outline-none focus:border-yellow-500 no-spinner"
                   required
                 />
               </div>

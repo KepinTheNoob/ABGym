@@ -1,12 +1,11 @@
 import RevenueChart from "./revenueChart";
-import AttendanceChart from "./attendanceChart";
+import AttendanceChart from "../finances/attendanceChart";
 import { RecentActivity } from "./recentActivity";
 import { ExpiringMembersWidget } from "./ExpiringWidgets";
 import { useAttendance } from "../../components/attendanceContext";
 import { useQuery } from "@tanstack/react-query";
 import { API } from "../../service/api";
-import { Member } from "../../types/types"; 
-
+import { Member } from "../../types/types";
 
 export default function Dashboard() {
   const { liveAttendance } = useAttendance();
@@ -47,11 +46,11 @@ export default function Dashboard() {
     staleTime: 1000 * 60,
   });
 
-
   const aktifCount = members.filter((m) => m.status === "Active").length;
-  const expiring7DaysCount = members.filter((m) => m.status === "Expiring").length;
+  const expiring7DaysCount = members.filter(
+    (m) => m.status === "Expiring"
+  ).length;
   const expiredCount = members.filter((m) => m.status === "Expired").length;
-
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -66,7 +65,6 @@ export default function Dashboard() {
     return isSameDay(new Date(m.joinDate), new Date());
   }).length;
 
-
   const { data: transactions = [] } = useQuery<any[]>({
     queryKey: ["transactions"],
     queryFn: async () => {
@@ -76,7 +74,7 @@ export default function Dashboard() {
     staleTime: 1000 * 60,
   });
 
-    const stats = (() => {
+  const stats = (() => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -124,8 +122,6 @@ export default function Dashboard() {
     };
   })();
 
-
-
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
       {/* Main Content */}
@@ -153,7 +149,9 @@ export default function Dashboard() {
               Pendapatan Bulanan
             </p>
             <div className="flex items-end gap-2 pb-2">
-              <h3 className="text-4xl md:text-4xl font-bold">Rp. {stats.revenue.toLocaleString()}</h3>
+              <h3 className="text-4xl md:text-4xl font-bold">
+                Rp. {stats.revenue.toLocaleString()}
+              </h3>
             </div>
             <span
               className={`text-xs md:text-sm ${
@@ -205,7 +203,6 @@ export default function Dashboard() {
             <RevenueChart />
           </div>
           {/* Live Attendance */}
-
           <div className="rounded-2xl border border-gray-800 bg-[#161618] p-6 flex flex-col h-full">
             <div className="flex items-center gap-2 text-gray-300 justify-center">
               <span>🏆</span>
@@ -216,12 +213,23 @@ export default function Dashboard() {
                 {/* Profile */}
                 <div className="flex-1 flex flex-col items-center justify-center gap-2 pt-2">
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-full border-[2px] border-yellow-400 flex items-center justify-center bg-gray-900">
-                      <div className="w-20 h-20 rounded-full flex items-center justify-center text-white text-xl font-bold">
-                        {liveAttendance.name[0]}
-                      </div>
+                    <div className="w-24 h-24 rounded-full border-[2px] border-yellow-400 flex items-center justify-center bg-gray-900 overflow-hidden">
+                      {/* FIX: Check for profilePhoto, fallback to initial if missing */}
+                      {liveAttendance.profilePhoto ? (
+                        <img
+                          src={liveAttendance.profilePhoto}
+                          alt={liveAttendance.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white text-3xl font-bold">
+                          {liveAttendance.name[0]}
+                        </div>
+                      )}
                     </div>
-                    <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-[#161618]" />
+                    <span
+                      className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#161618] ${dotColor}`}
+                    />
                   </div>
 
                   <div className="text-center">
@@ -229,23 +237,18 @@ export default function Dashboard() {
                       {liveAttendance.name}
                     </p>
                     <p
-                      className={`${statusColor} text-green-400 text-sm flex items-center justify-center gap-1`}
+                      className={`${statusColor} text-sm flex items-center justify-center gap-1`}
                     >
-                      <span className="w-2 h-2 rounded-full bg-green-400" />
+                      <span className={`w-2 h-2 rounded-full ${dotColor}`} />
                       {statusLabel}
                     </p>
                   </div>
                 </div>
+
+                {/* ... existing remaining days and time code ... */}
                 <div className="flex justify-between text-gray-400 text-xs sm:text-sm pb-2">
                   <p>Remaining:</p>
-                  <p className="text-white">
-                    {Math.ceil(
-                      (new Date(liveAttendance.expirationDate).getTime() -
-                        Date.now()) /
-                        (1000 * 60 * 60 * 24)
-                    )}{" "}
-                    days
-                  </p>
+                  <p className="text-white">{remainingDays} days</p>
                 </div>
 
                 <div className="flex justify-between text-gray-400 text-xs sm:text-sm pt-2">

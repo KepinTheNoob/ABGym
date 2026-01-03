@@ -37,7 +37,11 @@ export default function ScannerListener() {
 
         if (data.type === "ACCESS_GRANTED") {
           setLiveAttendance({
-            ...data.member,
+            id: data.member.id,
+            name: data.member.name,
+            expirationDate: data.member.expirationDate,
+            plan: String(data.member.plans),
+            profilePhoto: data.member.profilePhoto,
             checkInTime: data.checkInTime,
           });
         }

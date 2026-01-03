@@ -148,14 +148,26 @@ export default function Members() {
     createMemberMutation.mutate(data);
   };
 
+  const renewMemberMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      const res = await API.post(`/members/${payload.id}/renew`, payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] }); 
+      closeRenewalModal();
+    },
+  });
+
   const handleRenewalSubmit = (data: any) => {
     if (!renewalMember) return;
     const payload = {
-      ...renewalMember,
+      id: renewalMember.id,
       planId: Number(data.planId),
       joinDate: data.joinDate,
     };
-    updateMemberMutation.mutate(payload);
+    renewMemberMutation.mutate(payload);
   };
 
   const handleEditSubmit = (data: any) => {

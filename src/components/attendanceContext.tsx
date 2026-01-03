@@ -6,6 +6,7 @@ type LiveAttendance = {
   expirationDate: string;
   plan?: string;
   checkInTime: string;
+  profilePhoto?: string | null;
 } | null;
 
 const AttendanceContext = createContext<{
@@ -18,7 +19,7 @@ export function AttendanceProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <AttendanceContext.Provider value={{ liveAttendance, setLiveAttendance }}>
-      {children}
+      {children}  
     </AttendanceContext.Provider>
   );
 }

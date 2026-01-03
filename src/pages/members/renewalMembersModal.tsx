@@ -62,6 +62,7 @@ export default function RenewalMembersModal({
         joinDate: new Date().toISOString().split("T")[0],
         amountPaid: "",
         planId: "",
+        paymentMethod: "Cash",
       }));
       setJoinDate(new Date());
       setExpirationDate(null);
@@ -123,7 +124,20 @@ export default function RenewalMembersModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ ...formData, expirationDate });
+    
+    // Combine your form data and the calculated date
+    const payload = { ...formData, expirationDate };
+
+    // 👇 ADD THIS TO SEE THE DATA
+    console.group("🚀 Renewal Submission Debugger");
+    console.log("Plan ID:", payload.planId, typeof payload.planId);
+    console.log("Join Date:", payload.joinDate);
+    console.log("Payment Method:", payload.paymentMethod);
+    console.log("Amount Paid:", payload.amountPaid);
+    console.log("Calculated Expiration:", payload.expirationDate);
+    console.groupEnd();
+
+    onSubmit(payload);
   };
 
   if (!open) return null;
