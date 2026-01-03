@@ -24,7 +24,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <ScannerListener />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route element={<ProtectedRoute />}>
+            {/* <Route element={<ProtectedRoute />}> */}
               <Route element={<AppLayout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -33,7 +33,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/categories" element={<Categories />} />
                 <Route path="/plans" element={<Plans />} />
               </Route>
-            </Route>
+            {/* </Route> */}
           </Routes>
         </AttendanceProvider>
       </QueryClientProvider>

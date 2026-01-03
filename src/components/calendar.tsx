@@ -103,8 +103,6 @@ export default function Calendar({ value, onSelect }: CalendarProps) {
   );
 }
 
-// Dropdown mont and year
-
 function MonthDropdown({
   month,
   setMonth,

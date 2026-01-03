@@ -22,7 +22,6 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
 
   const queryClient = useQueryClient();
 
-  // --- Mutations ---
   const createMemberMutation = useMutation({
   mutationFn: async (payload: FormData) => {
       const res = await API.post("/members", payload, {
@@ -63,9 +62,6 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 
-
-
-  // --- Modal Handlers ---
   const openAddMemberModal = () => {
     setIsAddMemberOpen(true);
     setTimeout(() => setIsAddMemberVisible(true), 10);
@@ -86,7 +82,6 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
     setTimeout(() => setIsAddExpenseOpen(false), 300);
   };
 
-  // --- Submit Handlers ---
   const handleAddMemberSubmit = (data: FormData) => {
     createMemberMutation.mutate(data);
   };
@@ -107,10 +102,8 @@ export function ExpiringMembersWidget({ onNavigate }: ExpiringMembersWidgetProps
     .filter(m => m.status === "Expiring")   
     .filter(m => {
       if (selectedDays === 7) {
-        // 3D tab → 0–3 hari
         return m.daysLeft >= 0 && m.daysLeft <= 3;
       }
-      // 7D tab → 4–7 hari
       return m.daysLeft >= 4 && m.daysLeft <= 7;
     })
     .sort((a, b) => a.daysLeft - b.daysLeft)

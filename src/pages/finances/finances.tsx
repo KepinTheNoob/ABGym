@@ -164,36 +164,31 @@ export default function Finances() {
   };
 
   const stats = useMemo(() => {
-    // 1. Determine Current Month & Previous Month
     const now = new Date();
-    const currentMonth = now.getMonth(); // 0-11
+    const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
     const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-    // Helper to safely parse dates (handling " " vs "T")
     const parseDate = (dateStr: string) => new Date(dateStr.replace(" ", "T"));
 
-    // 2. Initialize Buckets
     let currentRevenue = 0;
     let currentExpenses = 0;
     let prevRevenue = 0;
     let prevExpenses = 0;
 
-    // 3. Loop through transactions once
     transactions.forEach((t) => {
       const tDate = parseDate(t.transactionDate);
       const tMonth = tDate.getMonth();
       const tYear = tDate.getFullYear();
       const amount = Number(t.amount);
 
-      // Check for Current Month
       if (tMonth === currentMonth && tYear === currentYear) {
         if (t.type === "Income") currentRevenue += amount;
         else currentExpenses += amount;
       }
-      // Check for Previous Month
+      
       else if (tMonth === prevMonth && tYear === prevYear) {
         if (t.type === "Income") prevRevenue += amount;
         else prevExpenses += amount;
@@ -203,9 +198,8 @@ export default function Finances() {
     const currentProfit = currentRevenue - currentExpenses;
     const prevProfit = prevRevenue - prevExpenses;
 
-    // 4. Calculate Percentage Changes
     const calculateChange = (current: number, previous: number) => {
-      if (previous === 0) return current > 0 ? 100 : 0; // Avoid divide by zero
+      if (previous === 0) return current > 0 ? 100 : 0;
       return ((current - previous) / previous) * 100;
     };
 

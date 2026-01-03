@@ -19,7 +19,6 @@ export default function CalendarPortal({
     visibility: "hidden",
   });
 
-  // positioning
   useLayoutEffect(() => {
     if (!anchorEl || !ref.current) return;
 
@@ -41,7 +40,6 @@ export default function CalendarPortal({
     });
   }, [anchorEl]);
 
-  // 👇 outside click
   useEffect(() => {
     function handle(e: MouseEvent) {
       if (

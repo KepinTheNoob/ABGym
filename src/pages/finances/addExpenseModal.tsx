@@ -5,7 +5,6 @@ import { API } from "../../service/api";
 import Calendar from "../../components/calendar";
 import CalendarPortal from "../../components/calendarPortal";
 
-// --- Types ---
 type Category = {
   id: number;
   name: string;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Calendar as CalendarIcon } from "lucide-react";
+import { X, Calendar as CalendarIcon, Camera } from "lucide-react";
 import Calendar from "../../components/calendar";
 import CalendarPortal from "../../components/calendarPortal";
 
@@ -44,6 +44,10 @@ export default function EditMemberModal({
   const [isDobCalendarOpen, setIsDobCalendarOpen] = useState(false);
   const dobRef = useRef<HTMLButtonElement>(null);
 
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (initialData) {
       setForm({
@@ -53,6 +57,9 @@ export default function EditMemberModal({
         dob: initialData.dob ? initialData.dob.split("T")[0] : "",
         address: initialData.address || "",
       });
+
+      setPreview(initialData.profilePhoto);
+      setProfilePhoto(null);
 
       if (initialData.dob) {
         const [y, m, d] = initialData.dob.split("T")[0].split("-").map(Number);
@@ -79,11 +86,25 @@ export default function EditMemberModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      ...initialData,
-      ...form,
-      dob: new Date(form.dob).toISOString(),
-    });
+    if (!initialData) return;
+
+    const payload = new FormData();
+
+    payload.append("id", initialData.id);
+    payload.append("name", form.name);
+    payload.append("email", form.email);
+    payload.append("phone", form.phone);
+    payload.append("address", form.address);
+
+    if (form.dob) {
+      payload.append("dob", new Date(form.dob).toISOString());
+    }
+
+    if (profilePhoto) {
+      payload.append("profilePhoto", profilePhoto);
+    }
+
+    onSubmit(payload);
   };
 
   if (!open || !initialData) return null;
@@ -103,38 +124,65 @@ export default function EditMemberModal({
             : "scale-95 opacity-0 translate-y-4"
         }`}
       >
-        {/* --- Header --- */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-white">Edit Profile Member</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* --- Profile Summary Section --- */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-16 h-16 rounded-full border-2 border-gray-700 overflow-hidden">
+          <div
+            className="relative w-20 h-20 rounded-full border-2 border-gray-700 overflow-hidden group cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
             <img
-              src={initialData.profilePhoto || "https://via.placeholder.com/150"}
+              src={preview || "https://via.placeholder.com/150"}
               alt={initialData.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-opacity group-hover:opacity-50"
+            />
+
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Camera className="w-6 h-6 text-white" />
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                setProfilePhoto(file);
+                setPreview(URL.createObjectURL(file));
+              }}
             />
           </div>
+
           <div>
-            <h4 className="text-white font-medium text-lg">{initialData.name}</h4>
-            <p className="text-gray-500 text-sm">ID: #{initialData.id.substring(0, 8)}</p>
-            <p className="text-gray-600 text-xs mt-0.5">
-              Joined: {new Date(initialData.joinDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-            </p>
+            <h4 className="text-lg font-bold text-white">{initialData.name}</h4>
+            <p className="text-sm text-gray-500">{initialData.email}</p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="text-yellow-500 text-xs mt-1 hover:underline"
+            >
+              Change Photo
+            </button>
           </div>
         </div>
 
-        {/* --- Form --- */}
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-6">
-            {/* Full Name */}
             <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">Full Name</label>
+              <label className="text-xs text-gray-400 mb-1.5 block">
+                Full Name
+              </label>
               <input
                 name="name"
                 value={form.name}
@@ -145,9 +193,10 @@ export default function EditMemberModal({
               />
             </div>
 
-            {/* Email Address */}
             <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">Email Address</label>
+              <label className="text-xs text-gray-400 mb-1.5 block">
+                Email Address
+              </label>
               <input
                 name="email"
                 value={form.email}
@@ -160,9 +209,10 @@ export default function EditMemberModal({
           </div>
 
           <div className="grid grid-cols-2 gap-6">
-            {/* Phone Number */}
             <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">Phone Number</label>
+              <label className="text-xs text-gray-400 mb-1.5 block">
+                Phone Number
+              </label>
               <input
                 name="phone"
                 value={form.phone}
@@ -173,9 +223,10 @@ export default function EditMemberModal({
               />
             </div>
 
-            {/* Date of Birth */}
             <div>
-              <label className="text-xs text-gray-400 mb-1.5 block">Date of Birth</label>
+              <label className="text-xs text-gray-400 mb-1.5 block">
+                Date of Birth
+              </label>
               <div className="relative">
                 <button
                   type="button"
@@ -184,11 +235,13 @@ export default function EditMemberModal({
                   className="w-full flex items-center justify-between rounded-lg bg-[#0a0a0a] border border-gray-800 px-3 py-2.5 text-sm text-left focus:outline-none focus:border-yellow-500 transition-colors"
                 >
                   <span className={dobDate ? "text-white" : "text-gray-500"}>
-                    {dobDate ? dobDate.toLocaleDateString("en-GB") : "Select Date"}
+                    {dobDate
+                      ? dobDate.toLocaleDateString("en-GB")
+                      : "Select Date"}
                   </span>
                   <CalendarIcon className="w-4 h-4 text-gray-500" />
                 </button>
-                
+
                 {isDobCalendarOpen && dobRef.current && (
                   <CalendarPortal
                     anchorEl={dobRef.current}
@@ -207,9 +260,10 @@ export default function EditMemberModal({
             </div>
           </div>
 
-          {/* Address */}
           <div>
-            <label className="text-xs text-gray-400 mb-1.5 block">Address</label>
+            <label className="text-xs text-gray-400 mb-1.5 block">
+              Address
+            </label>
             <input
               name="address"
               value={form.address}
@@ -219,7 +273,6 @@ export default function EditMemberModal({
             />
           </div>
 
-          {/* --- Footer Buttons --- */}
           <div className="flex justify-end gap-3 pt-6 border-t border-gray-800 mt-2">
             <button
               type="button"

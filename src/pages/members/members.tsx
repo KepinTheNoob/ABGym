@@ -9,6 +9,8 @@ import {
   Phone,
   QrCode,
   Check,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API } from "../../service/api";
@@ -17,22 +19,16 @@ import RenewalMembersModal from "./renewalMembersModal";
 import QRModal from "./qrModal";
 import EditMemberModal from "./editMemberModal";
 import { Member } from "../../types/types";
-import { Trash2, Loader2 } from "lucide-react";
-
 
 export default function Members() {
   const queryClient = useQueryClient();
 
-  // --- STATE MANAGEMENT ---
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Filtering & Sorting State
-  const [statusFilter, setStatusFilter] = useState("All"); // All, Active, Expiring, Expired
-  const [sortOrder, setSortOrder] = useState("Newest"); // Newest, Oldest, A-Z, Z-A
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortOrder, setSortOrder] = useState("Newest");
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
 
-  // Modal States
   const [openRenewal, setRenewalOpen] = useState(false);
   const [isRenewalVisible, setIsRenewalVisible] = useState(false);
   const [renewalMember, setRenewalMember] = useState<Member | null>(null);
@@ -47,25 +43,15 @@ export default function Members() {
   const [isEditVisible, setIsEditVisible] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
 
-  // Refs for clicking outside dropdowns
   const statusMenuRef = useRef<HTMLDivElement>(null);
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
-  // --- HANDLERS ---
-
-  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        statusMenuRef.current &&
-        !statusMenuRef.current.contains(event.target as Node)
-      ) {
+      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
         setShowStatusMenu(false);
       }
-      if (
-        sortMenuRef.current &&
-        !sortMenuRef.current.contains(event.target as Node)
-      ) {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
         setShowSortMenu(false);
       }
     }
@@ -73,7 +59,6 @@ export default function Members() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Reset pagination when filter/search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
@@ -91,6 +76,7 @@ export default function Members() {
       setRenewalMember(null);
     }, 300);
   };
+
   const openAddModal = () => {
     setIsAddOpen(true);
     setTimeout(() => setIsAddVisible(true), 10);
@@ -115,7 +101,6 @@ export default function Members() {
     }, 300);
   };
 
-  // --- QUERIES & MUTATIONS ---
   const memberQuery = useQuery<Member[]>({
     queryKey: ["members"],
     queryFn: async () => {
@@ -127,11 +112,7 @@ export default function Members() {
 
   const createMemberMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const res = await API.post("/members", payload, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const res = await API.post("/members", payload);
       return res.data;
     },
     onSuccess: () => {
@@ -142,7 +123,9 @@ export default function Members() {
 
   const updateMemberMutation = useMutation({
     mutationFn: async (payload: any) => {
-      const res = await API.put(`/members/${payload.id}`, payload);
+      const id = payload instanceof FormData ? payload.get("id") : payload.id;
+      
+      const res = await API.put(`/members/${id}`, payload);
       return res.data;
     },
     onSuccess: () => {
@@ -160,7 +143,6 @@ export default function Members() {
       queryClient.invalidateQueries({ queryKey: ["members"] });
     },
   });
-
 
   const handleAddSubmit = (data: FormData) => {
     createMemberMutation.mutate(data);
@@ -186,49 +168,29 @@ export default function Members() {
     }
   };
 
-
-  // --- STATS CALCULATION ---
   const aktifCount = members.filter((m) => m.status === "Active").length;
   const akanHabisCount = members.filter((m) => m.status === "Expiring").length;
   const tidakAktifCount = members.filter((m) => m.status === "Expired").length;
 
-  // --- FILTERING & SORTING LOGIC ---
-
-  // 1. Filter
   const filteredMembers = members.filter((m) => {
     const matchesSearch =
       m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.id.toLowerCase().includes(searchQuery.toLowerCase());
-
     const matchesStatus = statusFilter === "All" || m.status === statusFilter;
-
     return matchesSearch && matchesStatus;
   });
 
-  // 2. Sort
   const processedMembers = filteredMembers.sort((a, b) => {
-    if (sortOrder === "Newest") {
-      // Assuming joinDate exists, otherwise use ID or created_at
-      return new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime();
-    }
-    if (sortOrder === "Oldest") {
-      return new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime();
-    }
-    if (sortOrder === "A-Z") {
-      return a.name.localeCompare(b.name);
-    }
-    if (sortOrder === "Z-A") {
-      return b.name.localeCompare(a.name);
-    }
+    if (sortOrder === "Newest") return new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime();
+    if (sortOrder === "Oldest") return new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime();
+    if (sortOrder === "A-Z") return a.name.localeCompare(b.name);
+    if (sortOrder === "Z-A") return b.name.localeCompare(a.name);
     return 0;
   });
 
-  // 3. Pagination
   const PaginationMember = 6;
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(processedMembers.length / PaginationMember);
-
-  // Use processedMembers instead of raw members
   const PaginatedMembers = processedMembers.slice(
     (currentPage - 1) * PaginationMember,
     currentPage * PaginationMember
@@ -245,32 +207,61 @@ export default function Members() {
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         <div>
+          {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1">
-            <h2 className="text-xl md:text-2xl font-bold">
-              Membership Management
-            </h2>
+            <h2 className="text-xl md:text-2xl font-bold">Membership Management</h2>
             <button
-            className="w-full sm:w-auto bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold py-2.5 px-4 rounded-xl"
-            onClick={openAddModal}
-          >
-            + Add New Member
-          </button>
+              className="w-full sm:w-auto bg-[#F0B100] hover:bg-[#d9a000] text-black font-bold py-2.5 px-4 rounded-xl"
+              onClick={openAddModal}
+            >
+              + Add New Member
+            </button>
           </div>
           <p className="text-gray-400 mb-6 text-sm md:text-base">
             Atur Anggota, Membership dan Keuangan
           </p>
         </div>
 
-         <div className="md:hidden mt-6 divide-y divide-gray-800">
+        {/* --- FIX: MOVED STATS OUTSIDE 'hidden md:block' so they show on mobile --- */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
+            <p className="text-gray-400 text-sm md:text-xl font-bold pb-4">
+              Habis dalam 3 hari
+            </p>
+            <h3 className="text-2xl md:text-3xl font-bold">{akanHabisCount}</h3>
+            <p className="text-gray-400 text-xs md:text-sm pt-2">
+              Perlu Perpanjangan Segera
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
+            <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">
+              Habis dalam 7 hari
+            </p>
+            <h3 className="text-yellow-400 text-2xl md:text-3xl font-bold">{aktifCount}</h3>
+            <p className="text-gray-400 text-xs md:text-sm pt-2">
+              Periode perpanjangan
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
+            <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">
+              Member Kadaluwarsa
+            </p>
+            <h3 className="text-2xl text-red-600 md:text-3xl font-bold">{tidakAktifCount}</h3>
+            <p className="text-gray-400 text-xs md:text-sm pt-2">
+              Perlu Tindakan Segera
+            </p>
+          </div>
+        </div>
+
+        {/* --- MOBILE LIST --- */}
+        <div className="md:hidden mt-6 divide-y divide-gray-800">
           {PaginatedMembers.map((member) => (
-            <div key={member.id} className="p-4 space-y-3">
+            <div key={member.id} className="p-4 space-y-3 border-b border-gray-800">
               <div className="flex items-center gap-3">
                 <img
-                  src={
-                    member.profilePhoto ||
-                    "https://ui-avatars.com/api/?name=" + member.name
-                  }
-                  className="w-12 h-12 rounded-full border border-gray-700"
+                  src={member.profilePhoto || "https://ui-avatars.com/api/?name=" + member.name}
+                  className="w-12 h-12 rounded-full border border-gray-700 object-cover"
+                  alt={member.name}
                 />
                 <div className="flex-1">
                   <p className="font-semibold">{member.name}</p>
@@ -282,73 +273,34 @@ export default function Members() {
               </div>
 
               <div className="text-sm text-gray-400">
-                <p>{member.plans?.name}</p>
-                <p>{member.email}</p>
-                <p>{member.phone}</p>
+                <p>Plan: {member.plans?.name}</p>
+                <p>Email: {member.email}</p>
+                <p>Phone: {member.phone}</p>
               </div>
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => {
-                    setQrMember(member);
-                    setQrOpen(true);
-                  }}className="flex-1 py-2 bg-gray-800 rounded">QR</button>
-                <button onClick={() => openRenewalModal(member)} className="flex-1 py-2 bg-yellow-500/10 text-yellow-500 rounded">Renew</button>
-                <button onClick={() => openEditModal(member)} className="flex-1 py-2 bg-blue-500/10 text-blue-400 rounded">Edit</button>
-                <button onClick={() => handleDeleteMember(member.id)} className="flex-1 py-2 bg-red-500/10 text-red-400 rounded">Del</button>
+                  onClick={() => { setQrMember(member); setQrOpen(true); }}
+                  className="flex-1 py-2 bg-gray-800 rounded hover:bg-gray-700"
+                >
+                  QR
+                </button>
+                <button onClick={() => openRenewalModal(member)} className="flex-1 py-2 bg-yellow-500/10 text-yellow-500 rounded hover:bg-yellow-500 hover:text-black">
+                  Renew
+                </button>
+                <button onClick={() => openEditModal(member)} className="flex-1 py-2 bg-blue-500/10 text-blue-400 rounded hover:bg-blue-500 hover:text-white">
+                  Edit
+                </button>
+                <button onClick={() => handleDeleteMember(member.id)} className="flex-1 py-2 bg-red-500/10 text-red-400 rounded hover:bg-red-500 hover:text-white">
+                  Del
+                </button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* ================= DESKTOP TABLE ================= */}
-        <div className="hidden md:block mt-6">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {/* ... Stats cards (Same as before) ... */}
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-xl font-bold pb-4">
-              Habis dalam 3 hari
-            </p>
-            <div className="flex items-end gap-2">
-              <h3 className="text-2xl md:text-3xl font-bold">
-                {akanHabisCount}
-              </h3>
-            </div>
-            <p className="text-gray-400 text-xs md:text-sm pt-2">
-              Perlu Perpanjangan Segera
-            </p>
-          </div>
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">
-              Habis dalam 7 hari
-            </p>
-            <div className="flex items-end gap-2">
-              <h3 className="text-yellow-400 text-2xl md:text-3xl font-bold">
-                {aktifCount}
-              </h3>
-            </div>
-            <p className="text-gray-400 text-xs md:text-sm pt-2">
-              Periode perpanjangan
-            </p>
-          </div>
-          <div className="rounded-xl border border-gray-800 bg-[#161618] p-4 md:p-6">
-            <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">
-              Member Kadaluwarsa
-            </p>
-            <div className="flex items-end gap-2">
-              <h3 className=" text-2xl text-red-600 md:text-3xl font-bold">
-                {tidakAktifCount}
-              </h3>
-            </div>
-            <p className="text-gray-400 text-xs md:text-sm pt-2">
-              Perlu Tindakan Segera
-            </p>
-          </div>
-        </div>
-
-        {/* Table & Filters */}
-        <div className="mt-8 bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-lg">
+        {/* --- DESKTOP TABLE --- */}
+        <div className="hidden md:block mt-6 bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden shadow-lg">
           <div className="p-5 border-b border-gray-800">
             <div className="flex flex-wrap gap-4">
               {/* Search Bar */}
@@ -363,44 +315,25 @@ export default function Members() {
                 />
               </div>
 
-              {/* Status Filter Button */}
+              {/* Status Filter */}
               <div className="relative" ref={statusMenuRef}>
                 <button
                   onClick={() => setShowStatusMenu(!showStatusMenu)}
                   className="flex items-center gap-2 bg-[#0a0a0a] text-yellow-500 px-4 py-2.5 rounded-lg border border-gray-800 text-sm hover:bg-gray-900 transition-colors min-w-[160px] justify-between"
                 >
-                  <span>
-                    Status:{" "}
-                    <span className="font-semibold">{statusFilter}</span>
-                  </span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      showStatusMenu ? "rotate-180" : ""
-                    }`}
-                  />
+                  <span>Status: <span className="font-semibold">{statusFilter}</span></span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showStatusMenu ? "rotate-180" : ""}`} />
                 </button>
-
                 {showStatusMenu && (
                   <div className="absolute top-full mt-2 right-0 w-48 bg-[#161618] border border-gray-800 rounded-xl shadow-xl z-20 overflow-hidden">
                     {["All", "Active", "Expiring", "Expired"].map((status) => (
                       <button
                         key={status}
-                        onClick={() => {
-                          setStatusFilter(status);
-                          setShowStatusMenu(false);
-                        }}
-                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors flex items-center justify-between
-                          ${
-                            statusFilter === status
-                              ? "text-yellow-500 bg-gray-800/50"
-                              : "text-gray-300"
-                          }
-                        `}
+                        onClick={() => { setStatusFilter(status); setShowStatusMenu(false); }}
+                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors flex items-center justify-between ${statusFilter === status ? "text-yellow-500 bg-gray-800/50" : "text-gray-300"}`}
                       >
                         {status}
-                        {statusFilter === status && (
-                          <Check className="w-3.5 h-3.5" />
-                        )}
+                        {statusFilter === status && <Check className="w-3.5 h-3.5" />}
                       </button>
                     ))}
                   </div>
@@ -413,12 +346,9 @@ export default function Members() {
                   onClick={() => setShowSortMenu(!showSortMenu)}
                   className="flex items-center gap-2 bg-[#0a0a0a] text-white px-4 py-2.5 rounded-lg border border-gray-800 text-sm hover:bg-gray-900 transition-colors min-w-[140px] justify-between"
                 >
-                  <span className="flex items-center gap-2">
-                    Urutkan: <span className="text-gray-400">{sortOrder}</span>
-                  </span>
+                  <span className="flex items-center gap-2">Urutkan: <span className="text-gray-400">{sortOrder}</span></span>
                   <SlidersHorizontal className="w-4 h-4 text-gray-400" />
                 </button>
-
                 {showSortMenu && (
                   <div className="absolute top-full mt-2 right-0 w-48 bg-[#161618] border border-gray-800 rounded-xl shadow-xl z-20 overflow-hidden">
                     {[
@@ -429,22 +359,11 @@ export default function Members() {
                     ].map((opt) => (
                       <button
                         key={opt.value}
-                        onClick={() => {
-                          setSortOrder(opt.value);
-                          setShowSortMenu(false);
-                        }}
-                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors flex items-center justify-between
-                          ${
-                            sortOrder === opt.value
-                              ? "text-yellow-500 bg-gray-800/50"
-                              : "text-gray-300"
-                          }
-                        `}
+                        onClick={() => { setSortOrder(opt.value); setShowSortMenu(false); }}
+                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-800 transition-colors flex items-center justify-between ${sortOrder === opt.value ? "text-yellow-500 bg-gray-800/50" : "text-gray-300"}`}
                       >
                         {opt.label}
-                        {sortOrder === opt.value && (
-                          <Check className="w-3.5 h-3.5" />
-                        )}
+                        {sortOrder === opt.value && <Check className="w-3.5 h-3.5" />}
                       </button>
                     ))}
                   </div>
@@ -457,30 +376,17 @@ export default function Members() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-800 bg-[#161618]/50">
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                    Member
-                  </th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                    Paket
-                  </th>
-                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                    Kontak
-                  </th>
-                  <th className="text-center px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                    Ubah
-                  </th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Member</th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Status</th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Paket</th>
+                  <th className="text-left px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Kontak</th>
+                  <th className="text-center px-5 py-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">Ubah</th>
                 </tr>
               </thead>
               <tbody>
                 {PaginatedMembers.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={5}
-                      className="px-5 py-16 text-center text-gray-500"
-                    >
+                    <td colSpan={5} className="px-5 py-16 text-center text-gray-500">
                       <div className="flex flex-col items-center gap-2">
                         <Search className="w-8 h-8 opacity-20" />
                         <p>No members found matching your criteria</p>
@@ -489,81 +395,47 @@ export default function Members() {
                   </tr>
                 ) : (
                   PaginatedMembers.map((member) => (
-                    <tr
-                      key={member.id}
-                      className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
-                    >
-                      {/* Name & ID */}
+                    <tr key={member.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <img
-                            src={
-                              member.profilePhoto ||
-                              "https://ui-avatars.com/api/?name=" +
-                                member.name +
-                                "&background=random"
-                            }
+                            src={member.profilePhoto || "https://ui-avatars.com/api/?name=" + member.name + "&background=random"}
                             className="w-10 h-10 rounded-full border border-gray-700 object-cover"
                             alt={member.name}
                           />
                           <div>
-                            <p className="text-white text-sm font-medium">
-                              {member.name}
-                            </p>
-                            <p className="text-gray-500 text-xs font-mono">
-                              #GYM-{member.id.substring(0, 8)}
-                            </p>
+                            <p className="text-white text-sm font-medium">{member.name}</p>
+                            <p className="text-gray-500 text-xs font-mono">#GYM-{member.id.substring(0, 8)}</p>
                           </div>
                         </div>
                       </td>
-
-                      {/* Status */}
                       <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            member.status
-                          )}`}
-                        >
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(member.status)}`}>
                           <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5" />
                           {member.status}
                         </span>
                       </td>
-
-                      {/* Plan Type */}
                       <td className="px-5 py-4">
-                        <p className="text-white text-sm">
-                          {member.plans?.name || "Unknown"}
-                        </p>
+                        <p className="text-white text-sm">{member.plans?.name || "Unknown"}</p>
                       </td>
-
-                      {/* Contact */}
                       <td className="px-5 py-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-xs">
                             <Mail className="w-3.5 h-3.5 text-gray-500" />
-                            <span className="text-gray-300">
-                              {member.email}
-                            </span>
+                            <span className="text-gray-300">{member.email}</span>
                           </div>
                           <div className="flex items-center gap-2 text-xs">
                             <Phone className="w-3.5 h-3.5 text-gray-500" />
-                            <span className="text-gray-300">
-                              {member.phone}
-                            </span>
+                            <span className="text-gray-300">{member.phone}</span>
                           </div>
                         </div>
                       </td>
-
-                      {/* Actions */}
                       <td className="px-5 py-4">
                         <div className="flex justify-center gap-2">
                           <button
                             title="QR Code"
                             className="p-2 bg-gray-800 text-gray-400 rounded-lg hover:bg-gray-700 hover:text-white transition-colors"
-                            onClick={() => {
-                              setQrMember(member);
-                              setQrOpen(true);
-                            }}
+                            onClick={() => { setQrMember(member); setQrOpen(true); }}
                           >
                             <QrCode className="w-4 h-4" />
                           </button>
@@ -587,8 +459,7 @@ export default function Members() {
                             disabled={deleteMemberMutation.isPending}
                             className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition disabled:opacity-50"
                           >
-                            {deleteMemberMutation.isPending &&
-                            deleteMemberMutation.variables === member.id ? (
+                            {deleteMemberMutation.isPending && deleteMemberMutation.variables === member.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                               <Trash2 className="w-4 h-4" />
@@ -601,21 +472,11 @@ export default function Members() {
                 )}
               </tbody>
             </table>
-            </div>
 
             {/* Pagination */}
             <div className="flex items-center justify-between px-5 py-4 border-t border-gray-800 bg-[#161618]/30">
               <p className="text-sm text-gray-500">
-                Showing{" "}
-                {processedMembers.length === 0
-                  ? 0
-                  : (currentPage - 1) * PaginationMember + 1}
-                –
-                {Math.min(
-                  currentPage * PaginationMember,
-                  processedMembers.length
-                )}{" "}
-                of {processedMembers.length} members
+                Showing {processedMembers.length === 0 ? 0 : (currentPage - 1) * PaginationMember + 1} – {Math.min(currentPage * PaginationMember, processedMembers.length)} of {processedMembers.length} members
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -629,11 +490,7 @@ export default function Members() {
                   <button
                     key={i}
                     onClick={() => setCurrentPage(i + 1)}
-                    className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                      currentPage === i + 1
-                        ? "bg-yellow-500 text-black font-semibold shadow-lg shadow-yellow-500/20"
-                        : "border border-gray-800 text-gray-400 hover:bg-gray-800"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${currentPage === i + 1 ? "bg-yellow-500 text-black font-semibold shadow-lg shadow-yellow-500/20" : "border border-gray-800 text-gray-400 hover:bg-gray-800"}`}
                   >
                     {i + 1}
                   </button>

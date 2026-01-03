@@ -25,20 +25,16 @@ export default function RevenueExpenseChart({ transactions }: Props) {
   const chartData = useMemo(() => {
     if (!transactions.length) return [];
 
-    // 1. Determine Date Range (Anchor to the latest transaction)
     const sortedTxns = [...transactions].sort(
       (a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()
     );
     
-    // Default to today if no transactions, else use latest transaction date
     const latestDate = sortedTxns.length > 0 ? new Date(sortedTxns[0].transactionDate) : new Date();
     
     const anchorYear = latestDate.getFullYear();
     const anchorMonth = latestDate.getMonth();
 
-    // 2. Create Last 6 Months Buckets
     const buckets = Array.from({ length: 6 }, (_, i) => {
-      // i=0 is 5 months ago, i=5 is anchor month
       const d = new Date(anchorYear, anchorMonth - 5 + i, 1);
       return {
         monthKey: `${d.getFullYear()}-${d.getMonth()}`,
@@ -48,7 +44,6 @@ export default function RevenueExpenseChart({ transactions }: Props) {
       };
     });
 
-    // 3. Aggregate Data
     transactions.forEach((t) => {
       const tDate = new Date(t.transactionDate);
       const tKey = `${tDate.getFullYear()}-${tDate.getMonth()}`;
