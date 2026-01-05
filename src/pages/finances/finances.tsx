@@ -216,12 +216,19 @@ export default function Finances() {
   }, [transactions]);
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(
-      (t) =>
-        t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.id.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return [...transactions]
+      .sort(
+        (a, b) =>
+          new Date(b.transactionDate).getTime() -
+          new Date(a.transactionDate).getTime()
+      )
+      .filter(
+        (t) =>
+          t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          t.id.toLowerCase().includes(searchTerm.toLowerCase())
+      );
   }, [transactions, searchTerm]);
+
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
   const paginatedTransactions = filteredTransactions.slice(
@@ -264,6 +271,29 @@ export default function Finances() {
 
     return `conic-gradient(${gradientParts.join(", ")})`;
   }, [categoryData]);
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  const clearTableMutation = useMutation({
+    mutationFn: async () => {
+      await API.delete("/transactions/"); 
+    },
+    onSuccess: () => {
+      toast.success("All transactions cleared!");
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      setIsConfirmOpen(false);
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error("Failed to clear transactions.");
+    },
+  });
+
+  const handleClearTable = () => {
+    clearTableMutation.mutate();
+  };
+
+
 
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
@@ -481,6 +511,47 @@ export default function Finances() {
                   className="w-full bg-[#10141a] border border-gray-800 rounded-lg py-2 pl-10 pr-4 text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:border-transparent text-sm"
                 />
               </div>
+              <button
+                onClick={() => setIsConfirmOpen(true)}
+                className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors"
+              >
+                Clear Table
+              </button>
+
+              {isConfirmOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                  <div className="bg-[#1A1A1A] p-6 rounded-xl w-80 text-center">
+                    <h3 className="text-lg font-bold mb-4 text-white">
+                      Confirm Clear
+                    </h3>
+                    <p className="text-gray-400 mb-6">
+                      Are you sure you want to delete <b>all transactions</b>? This action cannot be undone.
+                    </p>
+                    <div className="flex justify-between gap-4">
+                      <button
+                        onClick={() => setIsConfirmOpen(false)}
+                        className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-xl text-white font-medium transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleClearTable}
+                        disabled={clearTableMutation.isPending}
+                      >
+                        {clearTableMutation.isPending ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Clearing...
+                          </div>
+                        ) : (
+                          "Confirm"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
 
             {/* Table */}
