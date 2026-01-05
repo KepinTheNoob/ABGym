@@ -16,6 +16,7 @@ import { API } from "../../service/api";
 import toast, { Toaster } from "react-hot-toast";
 import AddExpenseModal from "./addExpenseModal";
 import RevenueExpenseChart from "./revenueExpenseChart";
+import ClearTableModal from "./clearTableModal";
 
 type TransactionType = "Income" | "Expense";
 type PaymentMethod = "Cash" | "CreditCard" | "Transfer";
@@ -55,6 +56,8 @@ export default function Finances() {
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isAddVisible, setIsAddVisible] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -82,6 +85,16 @@ export default function Finances() {
     setTimeout(() => setIsAddOpen(false), 300);
   };
 
+  const openConfirmModal = () => {
+    setIsConfirmOpen(true);
+    setTimeout(() => setIsConfirmVisible(true), 10);
+  };
+
+  const closeConfirmModal = () => {
+    setIsConfirmVisible(false);
+    setTimeout(() => setIsConfirmOpen(false), 300);
+  };
+
   const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
     queryKey: ["transactions"],
     queryFn: async () => {
@@ -91,57 +104,56 @@ export default function Finances() {
   });
 
   const handleExport = () => {
-  if (!transactions.length) {
-    toast.error("No data to export");
-    return;
-  }
+    if (!transactions.length) {
+      toast.error("No data to export");
+      return;
+    }
 
-  const separator = ";";
+    const separator = ";";
 
-  const headers = [
-    "ID",
-    "Description",
-    "Category",
-    "Date",
-    "Type",
-    "Amount",
-    "Payment Method",
-  ];
+    const headers = [
+      "ID",
+      "Description",
+      "Category",
+      "Date",
+      "Type",
+      "Amount",
+      "Payment Method",
+    ];
 
-  const escape = (value: any) =>
-    `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const escape = (value: any) =>
+      `"${String(value ?? "").replace(/"/g, '""')}"`;
 
-  const rows = transactions.map((t) => [
-    escape(t.id),
-    escape(t.description),
-    escape(t.category?.name || "Uncategorized"),
-    escape(new Date(t.transactionDate).toLocaleDateString()),
-    escape(t.type),
-    escape(t.amount),
-    escape(t.paymentMethod),
-  ]);
+    const rows = transactions.map((t) => [
+      escape(t.id),
+      escape(t.description),
+      escape(t.category?.name || "Uncategorized"),
+      escape(new Date(t.transactionDate).toLocaleDateString()),
+      escape(t.type),
+      escape(t.amount),
+      escape(t.paymentMethod),
+    ]);
 
-  const csvContent = [
-    headers.map(escape).join(separator),
-    ...rows.map((row) => row.join(separator)),
-  ].join("\n");
+    const csvContent = [
+      headers.map(escape).join(separator),
+      ...rows.map((row) => row.join(separator)),
+    ].join("\n");
 
-  const blob = new Blob(["\uFEFF" + csvContent], {
-    type: "text/csv;charset=utf-8;",
-  });
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `financial_report_${new Date()
-    .toISOString()
-    .split("T")[0]}.csv`;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `financial_report_${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
 
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const createMutation = useMutation({
     mutationFn: async (newTransaction: any) => {
@@ -187,9 +199,7 @@ export default function Finances() {
       if (tMonth === currentMonth && tYear === currentYear) {
         if (t.type === "Income") currentRevenue += amount;
         else currentExpenses += amount;
-      }
-      
-      else if (tMonth === prevMonth && tYear === prevYear) {
+      } else if (tMonth === prevMonth && tYear === prevYear) {
         if (t.type === "Income") prevRevenue += amount;
         else prevExpenses += amount;
       }
@@ -228,7 +238,6 @@ export default function Finances() {
           t.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
   }, [transactions, searchTerm]);
-
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
   const paginatedTransactions = filteredTransactions.slice(
@@ -272,11 +281,9 @@ export default function Finances() {
     return `conic-gradient(${gradientParts.join(", ")})`;
   }, [categoryData]);
 
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-
   const clearTableMutation = useMutation({
     mutationFn: async () => {
-      await API.delete("/transactions/"); 
+      await API.delete("/transactions/");
     },
     onSuccess: () => {
       toast.success("All transactions cleared!");
@@ -292,8 +299,6 @@ export default function Finances() {
   const handleClearTable = () => {
     clearTableMutation.mutate();
   };
-
-
 
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
@@ -512,46 +517,11 @@ export default function Finances() {
                 />
               </div>
               <button
-                onClick={() => setIsConfirmOpen(true)}
+                onClick={openConfirmModal}
                 className="w-full sm:w-auto flex items-center justify-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors"
               >
                 Clear Table
               </button>
-
-              {isConfirmOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="bg-[#1A1A1A] p-6 rounded-xl w-80 text-center">
-                    <h3 className="text-lg font-bold mb-4 text-white">
-                      Confirm Clear
-                    </h3>
-                    <p className="text-gray-400 mb-6">
-                      Are you sure you want to delete <b>all transactions</b>? This action cannot be undone.
-                    </p>
-                    <div className="flex justify-between gap-4">
-                      <button
-                        onClick={() => setIsConfirmOpen(false)}
-                        className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 rounded-xl text-white font-medium transition"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleClearTable}
-                        disabled={clearTableMutation.isPending}
-                      >
-                        {clearTableMutation.isPending ? (
-                          <div className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Clearing...
-                          </div>
-                        ) : (
-                          "Confirm"
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
             </div>
 
             {/* Table */}
@@ -580,10 +550,34 @@ export default function Finances() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {paginatedTransactions.length === 0 ? (
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, index) => (
+                      <tr key={index} className="animate-pulse">
+                        <td className="px-6 py-4">
+                          <div className="h-4 bg-gray-800 rounded w-3/4 mb-2"></div>
+                          <div className="h-3 bg-gray-800/50 rounded w-1/2"></div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="h-4 bg-gray-800 rounded w-24"></div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="h-4 bg-gray-800 rounded w-20"></div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="h-4 bg-gray-800 rounded w-16"></div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="h-4 bg-gray-800 rounded w-24"></div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="h-8 w-8 bg-gray-800 rounded-lg"></div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : paginatedTransactions.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="px-6 py-8 text-center text-gray-500"
                       >
                         No transactions found.
@@ -745,6 +739,14 @@ export default function Finances() {
         onClose={closeAddModal}
         onSubmit={handleAddSubmit}
         isLoading={createMutation.isPending}
+      />
+
+      <ClearTableModal
+        open={isConfirmOpen}
+        isVisible={isConfirmVisible}
+        onClose={closeConfirmModal}
+        onConfirm={() => clearTableMutation.mutate()}
+        isLoading={clearTableMutation.isPending}
       />
     </div>
   );
