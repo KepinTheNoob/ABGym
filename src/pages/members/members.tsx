@@ -180,9 +180,32 @@ export default function Members() {
     }
   };
 
-  const aktifCount = members.filter((m) => m.status === "Active").length;
-  const akanHabisCount = members.filter((m) => m.status === "Expiring").length;
-  const tidakAktifCount = members.filter((m) => m.status === "Expired").length;
+  const getDaysRemaining = (expiryDateStr: string | Date) => {
+    const now = new Date();
+    const expiry = new Date(expiryDateStr);
+
+    now.setHours(0, 0, 0, 0);
+    expiry.setHours(0, 0, 0, 0);
+
+    const diffTime = expiry.getTime() - now.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const expiring3DaysCount = members.filter((m) => {
+    const days = getDaysRemaining(m.expirationDate);
+    return days >= 1 && days <= 3;
+  }).length;
+
+  const expiring7DaysCount = members.filter((m) => {
+    const days = getDaysRemaining(m.expirationDate);
+    return days >= 1 && days <= 7;
+  }).length;
+
+  const expiredTotalCount = members.filter((m) => {
+    const days = getDaysRemaining(m.expirationDate);
+    return days < 1;
+  }).length;
+
 
   const filteredMembers = members.filter((m) => {
     const matchesSearch =
@@ -240,7 +263,7 @@ export default function Members() {
             <p className="text-gray-400 text-sm md:text-xl font-bold pb-4">
               Habis dalam 3 hari
             </p>
-            <h3 className="text-2xl md:text-3xl font-bold">{akanHabisCount}</h3>
+            <h3 className="text-2xl md:text-3xl font-bold">{expiring3DaysCount}</h3>
             <p className="text-gray-400 text-xs md:text-sm pt-2">
               Perlu Perpanjangan Segera
             </p>
@@ -249,7 +272,7 @@ export default function Members() {
             <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">
               Habis dalam 7 hari
             </p>
-            <h3 className="text-yellow-400 text-2xl md:text-3xl font-bold">{aktifCount}</h3>
+            <h3 className="text-yellow-400 text-2xl md:text-3xl font-bold">{expiring7DaysCount}</h3>
             <p className="text-gray-400 text-xs md:text-sm pt-2">
               Periode perpanjangan
             </p>
@@ -258,7 +281,7 @@ export default function Members() {
             <p className="text-gray-400 text-sm md:text-xl pb-4 font-bold">
               Member Kadaluwarsa
             </p>
-            <h3 className="text-2xl text-red-600 md:text-3xl font-bold">{tidakAktifCount}</h3>
+            <h3 className="text-2xl text-red-600 md:text-3xl font-bold">{expiredTotalCount}</h3>
             <p className="text-gray-400 text-xs md:text-sm pt-2">
               Perlu Tindakan Segera
             </p>

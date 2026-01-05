@@ -22,7 +22,7 @@ export default function Sidebar() {
       path: "/members",
     },
     {
-      label: "Finances",
+      label: "Keuangan",
       icon: DollarIcon,
       path: "/finances",
     },

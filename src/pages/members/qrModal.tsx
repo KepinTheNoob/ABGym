@@ -5,7 +5,6 @@ import bg from "../../assets/CardBg.png";
 import html2canvas from "html2canvas";
 import { Download } from "lucide-react";
 
-
 type QRModalProps = {
   open: boolean;
   onClose: () => void;
@@ -27,12 +26,16 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
     });
   };
 
-  // Fungsi download menggunakan html2canvas
   const downloadCard = async (member: Member) => {
     if (!cardRef.current || !member) return;
+
+    await new Promise(res => setTimeout(res, 300));
+
     const canvas = await html2canvas(cardRef.current, {
-      backgroundColor: null,
       scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: null,
     });
     const link = document.createElement("a");
     link.download = `GYM-${member.id.substring(0, 8)}.png`;
@@ -120,6 +123,7 @@ export default function QRModal({ open, onClose, member }: QRModalProps) {
            <div className="w-26 h-26 sm:w-28 sm:h-28 rounded-full bg-black flex items-center justify-center border-[3px] border-[#C99C33] shadow-[0_0_25px_rgba(201,156,51,0.6)]">
               <img
                 src={member.profilePhoto || `https://ui-avatars.com/api/?name=${member.name}`}
+                crossOrigin="anonymous"
                 className="w-full h-full object-cover rounded-full"
               />
             </div>

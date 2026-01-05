@@ -99,8 +99,8 @@ export default function AddExpenseModal({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-bold">Add New Transaction</h3>
-            <p className="text-sm text-gray-400">Record a new income or expense</p>
+            <h3 className="text-lg font-bold">Tambah Transaksi Baru</h3>
+            <p className="text-sm text-gray-400">Catat Pemasukan dan Pengeluaran Baru</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             ✕
@@ -120,7 +120,7 @@ export default function AddExpenseModal({
                   : "text-gray-400 hover:text-gray-200"
               }`}
             >
-              Expense
+              Pengeluaran
             </button>
             <button
               type="button"
@@ -131,13 +131,13 @@ export default function AddExpenseModal({
                   : "text-gray-400 hover:text-gray-200"
               }`}
             >
-              Income
+              Pemasukan 
             </button>
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-xs text-gray-400">Description</label>
+            <label className="text-xs text-gray-400">Deskripsi</label>
             <input
               name="description"
               value={form.description}
@@ -151,7 +151,7 @@ export default function AddExpenseModal({
           <div className="grid grid-cols-2 gap-4">
             {/* Amount */}
             <div>
-              <label className="text-xs text-gray-400">Amount</label>
+              <label className="text-xs text-gray-400">Jumlah</label>
               <div className="relative mt-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">Rp</span>
                 <input
@@ -201,7 +201,7 @@ export default function AddExpenseModal({
           <div className="grid grid-cols-2 gap-4">
             {/* Date Picker */}
             <div className="relative">
-              <label className="text-xs text-gray-400">Date</label>
+              <label className="text-xs text-gray-400">Tanggal</label>
               <button
                 type="button"
                 ref={dateRef}
@@ -232,7 +232,7 @@ export default function AddExpenseModal({
 
             {/* Payment Method */}
             <div className="relative">
-              <label className="text-xs text-gray-400">Payment Method</label>
+              <label className="text-xs text-gray-400">Metode Pembayaran</label>
               <div className="relative mt-1">
                 <select
                   name="paymentMethod"

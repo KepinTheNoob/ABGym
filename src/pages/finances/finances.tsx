@@ -400,9 +400,9 @@ export default function Finances() {
           {/* DYNAMIC DONUT CHART */}
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="mb-6">
-              <h3 className="text-lg font-bold mb-1">Revenue by Type</h3>
+              <h3 className="text-lg font-bold mb-1">Tipe Pendapatan</h3>
               <p className="text-sm text-gray-400">
-                Current Month Distribution
+                Distribusi Bulanan terkini
               </p>
             </div>
             <div className="flex justify-center items-center h-64 relative">
@@ -460,9 +460,9 @@ export default function Finances() {
           <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <div>
-                <h3 className="text-lg font-bold mb-1">Recent Transactions</h3>
+                <h3 className="text-lg font-bold mb-1">Transaksi Terkini</h3>
                 <p className="text-sm text-gray-400">
-                  Latest financial activities
+                  Transaksi Keuangan terbaru
                 </p>
               </div>
             </div>
