@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 export default function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  // const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -102,7 +102,7 @@ export default function LoginPage() {
             </div>
 
             {/* Remember Me */}
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={rememberMe}
@@ -110,7 +110,7 @@ export default function LoginPage() {
                 className="w-4 h-4 accent-yellow-500"
               />
               <span className="text-sm text-gray-400">Remember Me</span>
-            </div>
+            </div> */}
 
             {/* Submit */}
             <button

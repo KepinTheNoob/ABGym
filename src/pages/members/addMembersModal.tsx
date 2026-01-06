@@ -56,9 +56,15 @@ const AddMembersModal = ({
 
   useEffect(() => {
     if (!joinDate) return;
+
+    const year = joinDate.getFullYear();
+    const month = String(joinDate.getMonth() + 1).padStart(2, "0");
+    const day = String(joinDate.getDate()).padStart(2, "0");
+    const localDateString = `${year}-${month}-${day}`;
+
     setFormData((prev) => ({
       ...prev,
-      joinDate: joinDate.toISOString().split("T")[0],
+      joinDate: localDateString,
     }));
   }, [joinDate]);
 
@@ -84,22 +90,27 @@ const AddMembersModal = ({
 
     const expiry = new Date(start);
 
+    let daysToAdd = 0;
+
     switch (selectedPlan.durationUnit) {
       case "Day":
-        expiry.setDate(expiry.getDate() + selectedPlan.durationValue);
+        daysToAdd = selectedPlan.durationValue;
         break;
+
       case "Week":
-        expiry.setDate(expiry.getDate() + selectedPlan.durationValue * 7);
+        daysToAdd = selectedPlan.durationValue * 7;
         break;
+
       case "Month":
-        expiry.setMonth(expiry.getMonth() + selectedPlan.durationValue);
+        daysToAdd = selectedPlan.durationValue * 30;
         break;
+
       case "Year":
-        expiry.setFullYear(expiry.getFullYear() + selectedPlan.durationValue);
+        daysToAdd = selectedPlan.durationValue * 365;
         break;
     }
 
-    expiry.setDate(expiry.getDate() + 1);
+    expiry.setDate(expiry.getDate() + daysToAdd);
 
     expiry.setHours(23, 59, 59, 999);
 
