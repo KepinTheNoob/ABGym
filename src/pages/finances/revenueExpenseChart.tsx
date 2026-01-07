@@ -34,8 +34,8 @@ export default function RevenueExpenseChart({ transactions }: Props) {
     const anchorYear = latestDate.getFullYear();
     const anchorMonth = latestDate.getMonth();
 
-    const buckets = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(anchorYear, anchorMonth - 5 + i, 1);
+    const buckets = Array.from({ length: 4 }, (_, i) => {
+      const d = new Date(anchorYear, anchorMonth - 3 + i, 1);
       return {
         monthKey: `${d.getFullYear()}-${d.getMonth()}`,
         label: d.toLocaleString("default", { month: "short" }),

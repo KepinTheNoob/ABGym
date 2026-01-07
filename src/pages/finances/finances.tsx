@@ -267,6 +267,28 @@ export default function Finances() {
     }));
   }, [transactions]);
 
+  const paymentMethodData = useMemo(() => {
+    const data: Record<string, number> = {};
+    let total = 0;
+
+    transactions
+      .filter((t) => t.type === "Income")
+      .forEach((t) => {
+        const method = t.paymentMethod;
+        const amt = Number(t.amount);
+        data[method] = (data[method] || 0) + amt;
+        total += amt;
+      });
+
+    return Object.entries(data).map(([label, value], index) => ({
+      label,
+      value,
+      percentage: total > 0 ? (value / total) * 100 : 0,
+      displayPercentage: total > 0 ? Math.round((value / total) * 100) : 0,
+      color: COLORS[(index + 2) % COLORS.length],
+    }));
+  }, [transactions]);
+
   const conicGradient = useMemo(() => {
     if (categoryData.length === 0) return "conic-gradient(#333 0% 100%)";
 
@@ -280,6 +302,20 @@ export default function Finances() {
 
     return `conic-gradient(${gradientParts.join(", ")})`;
   }, [categoryData]);
+
+  const paymentGradient = useMemo(() => {
+    if (paymentMethodData.length === 0) return "conic-gradient(#333 0% 100%)";
+
+    let currentPercentage = 0;
+    const gradientParts = paymentMethodData.map((item) => {
+      const start = currentPercentage;
+      const end = currentPercentage + item.percentage;
+      currentPercentage = end;
+      return `${item.color.hex} ${start}% ${end}%`;
+    });
+
+    return `conic-gradient(${gradientParts.join(", ")})`;
+  }, [paymentMethodData]);
 
   const clearTableMutation = useMutation({
     mutationFn: async () => {
@@ -418,7 +454,7 @@ export default function Finances() {
 
         {/* --- Charts Section --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2 bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
+          <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="text-lg font-bold mb-1">Revenue vs Expenses</h3>
@@ -484,6 +520,59 @@ export default function Finances() {
               ) : (
                 <p className="text-sm text-gray-500 text-center">
                   No revenue data available
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* DYNAMIC DONUT CHART PAYMENT METHOD */}
+          <div className="bg-[#1A1A1A] p-6 rounded-xl border border-gray-800">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold mb-1">Metode Pembayaran</h3>
+              <p className="text-sm text-gray-400">Cash vs Transfer vs Card</p>
+            </div>
+            <div className="flex justify-center items-center h-64 relative">
+              <div className="w-56 h-56 rounded-full border-8 border-gray-600 relative flex items-center justify-center">
+                <div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: paymentGradient,
+                    mask: "radial-gradient(transparent 55%, black 55%)",
+                    WebkitMask: "radial-gradient(transparent 55%, black 55%)",
+                  }}
+                ></div>
+                <div className="text-center z-10">
+                  <p className="text-sm font-semibold text-gray-400">Total</p>
+                  <p className="text-xl font-semibold">
+                    Rp{stats.revenue.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              {paymentMethodData.length > 0 ? (
+                paymentMethodData.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center text-sm"
+                  >
+                    <div className="flex items-center">
+                      <span
+                        className={`w-3 h-3 rounded-full ${item.color.tw} mr-2`}
+                      ></span>
+                      <span className="text-gray-400">
+                        {item.label} ({item.displayPercentage}%)
+                      </span>
+                    </div>
+                    <span className="font-medium">
+                      Rp{item.value.toLocaleString()}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center">
+                  No payment data
                 </p>
               )}
             </div>
