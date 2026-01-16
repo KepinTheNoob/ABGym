@@ -38,9 +38,11 @@ const AddMembersModal = ({
     address: "",
     profilePhoto: null as File | null,
     joinDate: "",
-    paymentMethod: "",
+    paymentMethod: "Cash",
     planId: "",
   });
+
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [expirationDate, setExpirationDate] = useState<Date | null>(null);
@@ -135,11 +137,13 @@ const AddMembersModal = ({
     payload.append("address", formData.address);
     payload.append("joinDate", formData.joinDate);
     payload.append("planId", formData.planId);
+    payload.append("paymentMethod", formData.paymentMethod);
+
 
     if (formData.profilePhoto) {
       payload.append("profilePhoto", formData.profilePhoto);
     }
-
+    console.log("paymentMethod:", formData.paymentMethod);
     onSubmit(payload);
   };
 
@@ -348,6 +352,32 @@ const AddMembersModal = ({
                   </CalendarPortal>
                 )}
               </div>
+
+              {/* Payment Method */}
+                <div className="relative">
+                  <label className="text-xs text-gray-400">Payment Method</label>
+                  <div className="relative mt-1">
+                    <select
+                      name="paymentMethod"
+                      value={formData.paymentMethod}
+                      onChange={(e) => {
+                        handleChange(e);
+                      }}
+                      className="appearance-none w-full bg-[#0a0a0a] border border-gray-800 rounded-lg px-3 py-2 text-sm cursor-pointer"
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="Transfer">Transfer</option>
+                      <option value="CreditCard">Credit Card</option>
+                    </select>
+
+                    <ChevronDown
+                      className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform ${
+                        isPaymentOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                </div>
+
             </div>
 
             {/* Expiration Display */}
