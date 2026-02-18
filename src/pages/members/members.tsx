@@ -238,6 +238,37 @@ export default function Members() {
     return "bg-gray-500/10 text-gray-400";
   };
 
+
+    const getPaginationPages = () => {
+    const maxVisible = 4;
+    const pages: (number | "...")[] = [];
+
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+      return pages;
+    }
+
+    if (currentPage <= 2) {
+      pages.push(1, 2, 3, 4,  "...");
+      return pages;
+    }
+
+    if (currentPage >= totalPages - 1) {
+      pages.push("...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      return pages;
+    }
+
+    pages.push(
+      "...",
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      "..."
+    );
+
+    return pages;
+  };
+
   return (
     <div className="min-h-screen bg-[#0c0c0e] text-white flex">
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
@@ -521,15 +552,28 @@ export default function Members() {
                 >
                   ‹
                 </button>
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${currentPage === i + 1 ? "bg-yellow-500 text-black font-semibold shadow-lg shadow-yellow-500/20" : "border border-gray-800 text-gray-400 hover:bg-gray-800"}`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
+                {getPaginationPages().map((page, i) =>
+                  page === "..." ? (
+                    <span
+                      key={`dots-${i}`}
+                      className="px-3 py-1.5 text-gray-500 select-none"
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                        currentPage === page
+                          ? "bg-yellow-500 text-black font-semibold shadow-lg shadow-yellow-500/20"
+                          : "border border-gray-800 text-gray-400 hover:bg-gray-800"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
                 <button
                   disabled={currentPage === totalPages || totalPages === 0}
                   onClick={() => setCurrentPage((p) => p + 1)}
